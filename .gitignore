@@ -1,0 +1,10 @@
+# Frontend
+node_modules/
+dist/
+.DS_Store
+.env*
+!.env.example
+
+# Backend
+backend/server
+backend/*.exe
