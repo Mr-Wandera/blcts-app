@@ -119,7 +119,7 @@ func (h *HandlerDeps) HandleCreateCost(w http.ResponseWriter, r *http.Request) {
 	if h.DB != nil {
 		// Example high-performance sql insert executing against the dependency database pool
 		query := `INSERT INTO cost_entries (id, building_id, phase, category, amount, description, date, created_at, updated_at) 
-				  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 		dbErr := h.DB.Exec(r.Context(), query, newRecord.ID.String(), newRecord.BuildingID.String(), newRecord.Phase, newRecord.Category, newRecord.Amount, newRecord.Description, newRecord.Date, newRecord.CreatedAt, newRecord.UpdatedAt)
 		if dbErr != nil {
 			SendError(w, http.StatusInternalServerError, "Database storage failure: "+dbErr.Error(), "DATABASE_PERSIST_ERROR")
@@ -223,7 +223,7 @@ func (h *HandlerDeps) HandleGetDashboard(w http.ResponseWriter, r *http.Request)
 	SendJSON(w, http.StatusOK, response)
 }
 
-// HandleDisburseContractorMpesa processes contractor mobile payments with live transaction logs
+// HandleDisburseContractorMpesa processes contractor mobile payments with live transaction logs (B2C)
 func (h *HandlerDeps) HandleDisburseContractorMpesa(w http.ResponseWriter, r *http.Request) {
 	taskIDStr := chi.URLParam(r, "task_id")
 	taskID, err := uuid.Parse(taskIDStr)
@@ -285,5 +285,33 @@ func (h *HandlerDeps) HandleDisburseContractorMpesa(w http.ResponseWriter, r *ht
 			"payout_factor":   taskAmount,
 			"cleared_status":  "Paid",
 		},
+	})
+}
+
+// HandleInitiateSTKPush triggers a Safaricom STK Push to a customer's phone to collect payment.
+func (h *HandlerDeps) HandleInitiateSTKPush(w http.ResponseWriter, r *http.Request) {
+	// Grab the task ID from the URL
+	taskID := chi.URLParam(r, "task_id")
+
+	// ==========================================
+	// PUT YOUR REAL SAFARICOM NUMBER RIGHT HERE:
+	// Format must be 2547XXXXXXXX or 2541XXXXXXXX
+	// ==========================================
+	myPhoneNumber := "254798080038"
+	amountToPay := "1" // 1 Ksh for testing
+
+	// Call the new STK Push function we just built in mpesa.go
+	err := services.InitiateSTKPush(myPhoneNumber, amountToPay, taskID)
+	if err != nil {
+		// If Safaricom rejects it, we print the error to the Render logs
+		fmt.Printf("STK Error: %v\n", err)
+		SendError(w, http.StatusInternalServerError, "M-Pesa STK Push failed", "STK_PUSH_ERROR")
+		return
+	}
+
+	// Send a success message back to the frontend
+	SendJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"message": "STK Push sent successfully! Check your phone.",
 	})
 }
