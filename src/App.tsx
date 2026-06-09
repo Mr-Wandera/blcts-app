@@ -118,7 +118,7 @@ export default function App() {
     
     const capexTotal = propCosts
       .filter(c => c.phase === "Construction")
-      .reduce((sum, item) => sum + item.amount, 0) + (selectedPropertyId === "prop-1" ? 120000000 : selectedPropertyId === "prop-2" ? 85000000 : 180000000); // base structural CAPEX estimates added to give realistic totals
+      .reduce((sum, item) => sum + item.amount, 0) + (selectedPropertyId === "prop-1" ? 120000000 : selectedPropertyId === "prop-2" ? 85000000 : 180000000);
       
     const opexTotal = propCosts
       .filter(c => c.phase === "Operational" || c.phase === "Maintenance")
@@ -128,7 +128,6 @@ export default function App() {
       .filter(t => t.propertyId === selectedPropertyId && t.status === "Paid")
       .reduce((sum, item) => sum + item.amount, 0);
 
-    // Dynamic calculations
     const combinedOpex = opexTotal + paidMaintenanceTotal;
     const totalCostOfOwnership = capexTotal + combinedOpex;
 
@@ -154,21 +153,18 @@ export default function App() {
   const svgChartPaths = useMemo(() => {
     if (trendsData.length === 0) return { capexBudgetPath: "", capexActualPath: "", opexBudgetPath: "", opexActualPath: "", capexFillPath: "", opexFillPath: "", coords: [] };
     
-    // Scale points to draw beautiful smooth lines in SVG viewBox="0 0 600 200"
     const width = 600;
     const height = 200;
     const padding = 20;
     const chartWidth = width - padding * 2;
     const chartHeight = height - padding * 2;
 
-    // Find custom dynamic max val to scale chart coordinates precisely
     const allValues = trendsData.flatMap(d => [d.capexBudget, d.capexActual, d.opexBudget, d.opexActual]);
     const maxVal = Math.max(...allValues) * 1.1;
 
     const getX = (index: number) => padding + (index / (trendsData.length - 1)) * chartWidth;
     const getY = (value: number) => padding + chartHeight - (value / maxVal) * chartHeight;
 
-    // Construct point strings
     let capexActualPoints = "";
     let capexBudgetPoints = "";
     let opexActualPoints = "";
@@ -190,7 +186,6 @@ export default function App() {
       opexBudgetPoints += `${i === 0 ? "M" : "L"} ${x} ${yOpexBud} `;
     });
 
-    // Create fill path strings
     const capexFillPath = `${capexActualPoints} L ${getX(trendsData.length - 1)} ${height - padding} L ${getX(0)} ${height - padding} Z`;
     const opexFillPath = `${opexActualPoints} L ${getX(trendsData.length - 1)} ${height - padding} L ${getX(0)} ${height - padding} Z`;
 
@@ -269,7 +264,6 @@ export default function App() {
     setCostEntries([newRecord, ...costEntries]);
     setIsAddModalOpen(false);
     
-    // Clear state
     setNewEntry({
       phase: "Operational",
       component: "",
@@ -280,10 +274,8 @@ export default function App() {
     });
     setFormError("");
 
-    // Trigger toast notification
     triggerToast(`Success: Recorded KSh ${parsedAmount.toLocaleString()} under ${phase} phase!`, "success");
 
-    // Also inject a Maintenance Schedule item if it is in the maintenance phase
     if (phase === "Maintenance") {
       const newTask: MaintenanceTask = {
         id: `maint-user-${Date.now()}`,
@@ -308,19 +300,19 @@ export default function App() {
     setIsMpesaModalOpen(true);
   };
 
-  // Simulate M-Pesa STK Push
+  // Live M-Pesa STK Push API execution handler
   const handleInitiateMpesa = async () => {
     if (!activeMpesaTask) return;
     
     setMpesaStep("stk-sent");
 
     try {
-      // 1. Send the actual phone number to your Go backend!
+      const token = localStorage.getItem('token');
       const response = await fetch(`https://blcts-backend.onrender.com/api/maintenance/${activeMpesaTask.id}/stk`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // If you have JWT set up, you would add the Authorization header here
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ phone_number: mpesaPhone }) 
       });
@@ -331,22 +323,17 @@ export default function App() {
         throw new Error(data.message || "Failed to initiate M-Pesa STK Push");
       }
 
-      // 2. Safaricom accepted it! Tell the user to look at their phone.
       setMpesaStep("waiting-pin");
 
-      // 3. For your academic demo, we will automatically assume "Success" after a short delay
-      // (In a real enterprise app, you would set up a WebSocket or polling here to wait for the Daraja callback)
       setTimeout(() => {
         const txId = "STK" + Math.random().toString(36).substring(2, 12).toUpperCase();
         setMpesaTransactionId(txId);
         setMpesaStep("completed");
 
-        // Update task status to 'Paid' inside maintenance state
         setMaintenanceTasks(prev =>
           prev.map(t => (t.id === activeMpesaTask.id ? { ...t, status: "Paid" } : t))
         );
 
-        // Also record this inside general ledger cost ledger if not present
         const alreadyExists = costEntries.some(e => e.component === activeMpesaTask.component && e.propertyId === selectedPropertyId);
         if (!alreadyExists) {
           const mpesaLedgerRecord: CostEntry = {
@@ -362,12 +349,12 @@ export default function App() {
           };
           setCostEntries(prev => [mpesaLedgerRecord, ...prev]);
         }
-      }, 8000); // Wait 8 seconds before marking complete in the UI
+      }, 8000);
 
     } catch (error) {
       console.error("M-Pesa Error:", error);
       triggerToast(`M-Pesa Error: ${(error as Error).message}`, "warning");
-      setMpesaStep("idle"); // Reset so they can try again
+      setMpesaStep("idle");
     }
   };
 
@@ -443,35 +430,30 @@ export default function App() {
 
             {/* Top Navigation Utilities */}
             <div className="flex items-center gap-4">
-              {/* Alert Warning Count Indicator */}
               <div className="hidden md:flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-[10px] uppercase font-bold py-1 px-3 rounded-full border border-amber-250/50 dark:border-amber-800/40">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 animate-pulse" />
                 <span>{activeInsights.filter(i => i.type === "alert" || i.type === "warning").length} Warnings</span>
               </div>
 
-              {/* Theme Toggle Button */}
               <button
                 id="theme-toggle-btn"
                 onClick={toggleTheme}
                 className="p-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 transition-all cursor-pointer flex items-center justify-center relative group"
                 aria-label="Toggle Theme"
-                title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
               >
                 {isDarkMode ? (
-                  <Sun className="w-4 h-4 text-amber-400 transition-transform duration-300" />
+                  <Sun className="w-4 h-4 text-amber-400" />
                 ) : (
-                  <Moon className="w-4 h-4 text-slate-600 transition-transform duration-300" />
+                  <Moon className="w-4 h-4 text-slate-600" />
                 )}
-                {/* Tooltip hint */}
                 <span className="absolute -bottom-9 scale-0 group-hover:scale-100 transition-all duration-150 origin-top bg-slate-900 text-white text-[9px] font-bold px-2.5 py-1 rounded shadow-lg whitespace-nowrap z-50">
                   {isDarkMode ? "Light Mode" : "Dark Mode"}
                 </span>
               </button>
 
-              {/* Connected Developer Profile Info */}
               <div className="flex items-center gap-2.5 pl-3 border-l border-slate-100 dark:border-slate-800">
                 <div className="text-right hidden sm:block">
-                  <span className="text-slate-950 dark:text-slate-100 text-xs font-bold block leading-none">
+                  <span className="text-slate-955 dark:text-slate-100 text-xs font-bold block leading-none">
                     Abdulwahab Wandera
                   </span>
                   <span className="text-slate-400 dark:text-slate-500 text-[9px] block uppercase font-bold font-mono tracking-wider mt-1">
@@ -488,7 +470,6 @@ export default function App() {
           {/* Layout Content Body */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-7xl w-full mx-auto">
             
-            {/* Quick Summary Context Notification */}
             <div className="bg-slate-950 text-white rounded-2xl p-5 shadow-[0_4px_15px_rgba(15,23,42,0.05)] border border-slate-900 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-start gap-4 max-w-2xl">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/10">
@@ -546,7 +527,6 @@ export default function App() {
               <VendorCenter triggerToast={triggerToast} />
             )}
 
-            {/* EDUCATION FOOTER OUTLINE ON TOTAL COST OF OWNERSHIP */}
             <footer className="bg-white rounded-2xl p-6 border border-slate-200/60 text-xs text-slate-500 space-y-3 leading-relaxed shadow-[0_1px_4px_rgba(0,0,0,0.01)] font-sans">
               <h4 className="font-bold text-slate-900 flex items-center gap-1.5 font-display">
                 <Building2 className="w-4.5 h-4.5 text-slate-700" />

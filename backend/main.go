@@ -22,7 +22,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Println("Starting BLCTS Core Backend Enterprise Architecture...")
 
-	// 1. Establish PostgreSQL Connection Pool handles (with automatic fallback to mock logs if connection fails)
+	// 1. Establish PostgreSQL Connection Pool handles
 	var dbPool handlers.DBConnectionPool
 	db, err := config.ConnectDatabase()
 	if err != nil {
@@ -42,7 +42,6 @@ func main() {
 	// 3. Configure HTTP routing via Chi
 	r := chi.NewRouter()
 
-	// Implement industry standard middleware stacks
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
@@ -65,15 +64,8 @@ func main() {
 	// Public Metrics / Visualization route (safe read-only display logs used by Chart.js graphs)
 	r.Get("/api/dashboard/{building_id}", deps.HandleGetDashboard)
 
-	// ==========================================
-	// NEW: Trigger Safaricom STK Push
-	// ==========================================
-	r.Post("/api/maintenance/{task_id}/stk", deps.HandleInitiateSTKPush)
-
 	// Secured API Endpoint Router Groups protected by cryptographic JSON Web Token verified handles
-	// THE FIX IS HERE: Changed 'secured r.RouteReceiver' to 'secured chi.Router'
 	r.Group(func(secured chi.Router) {
-		// Apply JWT Verification and strict Role Privilege Guards (owner/manager/staff)
 		secured.Use(customMiddleware.EnsureJWT)
 
 		// Create invoice entries inside ledger (requires role permission to write logs)
@@ -81,12 +73,15 @@ func main() {
 
 		// Disburse actual contractor pay outs via M-Pesa sandbox integration
 		secured.With(customMiddleware.RequireRole("owner")).Post("/api/maintenance/{task_id}/pay", deps.HandleDisburseContractorMpesa)
+
+		// Securely Trigger Safaricom STK Push (Role protected)
+		secured.With(customMiddleware.RequireRole("owner", "manager")).Post("/api/maintenance/{task_id}/stk", deps.HandleInitiateSTKPush)
 	})
 
 	// 4. Server configuration binding to host environment interfaces
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // Default non-blocking backend channel
+		port = "8080"
 	}
 	serverAddr := fmt.Sprintf("0.0.0.0:%s", port)
 
@@ -109,11 +104,9 @@ func main() {
 		}
 	}()
 
-	// Block thread until interrupt signal arrives
 	sig := <-shutdownChan
 	log.Printf("Graceful shutdown sequence triggered on signal: %s\n", sig)
 
-	// Formulate 15 second context limit for pending database/HTTP loops to drain safely
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 

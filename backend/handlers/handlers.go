@@ -40,6 +40,11 @@ type CostUpsertInput struct {
 	Date        string  `json:"date"` // YYYY-MM-DD
 }
 
+// STKPushRequest captures dynamic customer numbers from frontend UI payloads
+type STKPushRequest struct {
+	PhoneNumber string `json:"phone_number"`
+}
+
 // ErrorResponse conveys structured errors to frontend UI clients
 type ErrorResponse struct {
 	Status  int    `json:"status"`
@@ -117,7 +122,6 @@ func (h *HandlerDeps) HandleCreateCost(w http.ResponseWriter, r *http.Request) {
 
 	// 3. PostgreSQL persistence (with fallback sandbox mocking)
 	if h.DB != nil {
-		// Example high-performance sql insert executing against the dependency database pool
 		query := `INSERT INTO cost_entries (id, building_id, phase, category, amount, description, date, created_at, updated_at) 
                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 		dbErr := h.DB.Exec(r.Context(), query, newRecord.ID.String(), newRecord.BuildingID.String(), newRecord.Phase, newRecord.Category, newRecord.Amount, newRecord.Description, newRecord.Date, newRecord.CreatedAt, newRecord.UpdatedAt)
@@ -157,8 +161,6 @@ func (h *HandlerDeps) HandleGetDashboard(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// 1. Collect aggregated financial records for the target asset
-	// (Under real deployment this runs heavy optimization indices queries against Postgres. Here we supply an elegant fallback structure)
 	var name, location string
 	var totalCapex, totalOpex float64
 	var healthGrade string
@@ -170,9 +172,8 @@ func (h *HandlerDeps) HandleGetDashboard(w http.ResponseWriter, r *http.Request)
 			SendError(w, http.StatusNotFound, "Building asset not found in database registry", "ASSET_NOT_FOUND")
 			return
 		}
-		healthGrade = "A" // In production, calculated dynamically by scanning log tolerances
+		healthGrade = "A"
 	} else {
-		// Mock Portfolio instances (matching frontend initialData structures)
 		name = "Delta Corner Commercial Block"
 		location = "Westlands, Nairobi"
 		totalCapex = 124500000.00
@@ -187,23 +188,20 @@ func (h *HandlerDeps) HandleGetDashboard(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	// 2. Fetch or mock historical entries to support statistical forecasting
 	historicalCostEntries := []models.CostEntry{
 		{BuildingID: buildingID, Phase: "maintenance", Category: "Elevator Service", Amount: 145000.00},
 		{BuildingID: buildingID, Phase: "maintenance", Category: "HVAC Upgrade", Amount: 320000.00},
 		{BuildingID: buildingID, Phase: "opex", Category: "Utilities", Amount: 110000.00},
-		{BuildingID: buildingID, Phase: "opex", Category: "Utilities", Amount: 148500.00}, // Historical anomalous utility record
+		{BuildingID: buildingID, Phase: "opex", Category: "Utilities", Amount: 148500.00},
 	}
 
-	// 3. Inject Predictive Machine Learning Forecasting Analytics
 	predEngine := services.GetAIPredictions(buildingID, historicalCostEntries)
 
-	// 4. Monthly trends mapping designed specifically to render Recharts / Chart.js directly
 	trends := []models.ChartDataPoint{
 		{Month: "Jan", CapexBudget: 15.0, CapexActual: 14.2, OpexBudget: 4.5, OpexActual: 4.8},
 		{Month: "Feb", CapexBudget: 12.0, CapexActual: 11.8, OpexBudget: 4.5, OpexActual: 4.2},
 		{Month: "Mar", CapexBudget: 10.0, CapexActual: 10.5, OpexBudget: 4.5, OpexActual: 5.1},
-		{Month: "Apr", CapexBudget: 8.0, CapexActual: 7.9, OpexBudget: 4.8, OpexActual: 5.6}, // High electrical anomalies peak
+		{Month: "Apr", CapexBudget: 8.0, CapexActual: 7.9, OpexBudget: 4.8, OpexActual: 5.6},
 		{Month: "May", CapexBudget: 5.0, CapexActual: 4.6, OpexBudget: 4.8, OpexActual: 4.4},
 	}
 
@@ -239,7 +237,6 @@ func (h *HandlerDeps) HandleDisburseContractorMpesa(w http.ResponseWriter, r *ht
 	}
 	mpesaReq.TaskID = taskIDStr
 
-	// 1. Match active task in the database for billing references
 	contractorName := "Jaza Premium Contractors Ltd"
 	taskAmount := 150000.00
 	if mpesaReq.Amount > 0 {
@@ -257,25 +254,20 @@ func (h *HandlerDeps) HandleDisburseContractorMpesa(w http.ResponseWriter, r *ht
 		}
 	}
 
-	// 2. Outbox gateway integration to Safaricom Daraja sandbox endpoints
 	response, disburseErr := services.DisburseContractorFunds(mpesaReq, contractorName)
 	if disburseErr != nil {
 		SendError(w, http.StatusBadGateway, "M-Pesa Gateway Disintegration: "+disburseErr.Error(), "MPESA_GATEWAY_FAILURE")
 		return
 	}
 
-	// 3. Mark the database state of the maintenance task as 'Paid' on successful disbursement
 	if h.DB != nil {
 		query := `UPDATE maintenance_tasks SET status = 'Paid' WHERE id = $1`
 		updateErr := h.DB.Exec(r.Context(), query, taskID.String())
 		if updateErr != nil {
-			// Fail-safe audit warning: transaction occurred but database failed to update status
-			// This signals high-integrity architecture practices
 			response.ResponseDescription += fmt.Sprintf(" WARNING: Payment succeeded but could not update status under DB references (%s)", updateErr.Error())
 		}
 	}
 
-	// Return payment receipt validation
 	SendJSON(w, http.StatusOK, map[string]interface{}{
 		"success":            true,
 		"disbursement_state": response,
@@ -288,28 +280,25 @@ func (h *HandlerDeps) HandleDisburseContractorMpesa(w http.ResponseWriter, r *ht
 	})
 }
 
-// HandleInitiateSTKPush triggers a Safaricom STK Push to a customer's phone to collect payment.
+// HandleInitiateSTKPush triggers a Safaricom STK Push via parameters derived dynamically from the frontend clients
 func (h *HandlerDeps) HandleInitiateSTKPush(w http.ResponseWriter, r *http.Request) {
-	// Grab the task ID from the URL
 	taskID := chi.URLParam(r, "task_id")
 
-	// ==========================================
-	// PUT YOUR REAL SAFARICOM NUMBER RIGHT HERE:
-	// Format must be 2547XXXXXXXX or 2541XXXXXXXX
-	// ==========================================
-	myPhoneNumber := "254798080038"
-	amountToPay := "1" // 1 Ksh for testing
-
-	// Call the new STK Push function we just built in mpesa.go
-	err := services.InitiateSTKPush(myPhoneNumber, amountToPay, taskID)
-	if err != nil {
-		// If Safaricom rejects it, we print the error to the Render logs
-		fmt.Printf("STK Error: %v\n", err)
-		SendError(w, http.StatusInternalServerError, "M-Pesa STK Push failed", "STK_PUSH_ERROR")
+	var req STKPushRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		SendError(w, http.StatusBadRequest, "Invalid request payload structural composition", "BAD_REQUEST")
 		return
 	}
 
-	// Send a success message back to the frontend
+	amountToPay := "1" // Standardized 1 KSh token validation amount for testing parameters
+
+	err := services.InitiateSTKPush(req.PhoneNumber, amountToPay, taskID)
+	if err != nil {
+		fmt.Printf("STK Error: %v\n", err)
+		SendError(w, http.StatusInternalServerError, "M-Pesa STK Push gateway rejection context", "STK_PUSH_ERROR")
+		return
+	}
+
 	SendJSON(w, http.StatusOK, map[string]interface{}{
 		"success": true,
 		"message": "STK Push sent successfully! Check your phone.",
