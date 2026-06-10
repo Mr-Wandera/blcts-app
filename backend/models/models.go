@@ -6,78 +6,50 @@ import (
 	"github.com/google/uuid"
 )
 
-// User represents the system identity profile
-type User struct {
-	ID           uuid.UUID `json:"id" db:"id"`
-	Name         string    `json:"name" db:"name"`
-	Email        string    `json:"email" db:"email"`
-	PasswordHash string    `json:"-" db:"password_hash"` // Never expose password hashes in JSON payloads
-	Role         string    `json:"role" db:"role"`       // owner, manager, staff
-	CreatedAt    time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
-}
-
-// Building represents the construction & operational real estate asset
-type Building struct {
-	ID         uuid.UUID `json:"id" db:"id"`
-	Name       string    `json:"name" db:"name"`
-	Location   string    `json:"location" db:"location"`
-	TotalCapex float64   `json:"total_capex" db:"total_capex"`
-	TotalOpex  float64   `json:"total_opex" db:"total_opex"`
-	CreatedAt  time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
-}
-
-// GetTCO compiles the true running Total Cost of Ownership (TCO = CAPEX + OPEX)
-func (b *Building) GetTCO() float64 {
-	return b.TotalCapex + b.TotalOpex
-}
-
-// BuildingWithTCO embeds the dynamic calculations for response bodies
-type BuildingResponse struct {
-	Building
-	TotalCostOfOwnership float64 `json:"total_cost_of_ownership"`
-}
-
-// NewBuildingResponse compiles hydrated database records into calculation structures
-func NewBuildingResponse(b Building) BuildingResponse {
-	return BuildingResponse{
-		Building:             b,
-		TotalCostOfOwnership: b.GetTCO(),
-	}
-}
-
-// CostEntry defines recorded invoices under specific lifecycle phases
 type CostEntry struct {
-	ID          uuid.UUID `json:"id" db:"id"`
-	BuildingID  uuid.UUID `json:"building_id" db:"building_id"`
-	Phase       string    `json:"phase" db:"phase"` // capex, opex, maintenance, end-of-life
-	Category    string    `json:"category" db:"category"`
-	Amount      float64   `json:"amount" db:"amount"`
-	Description string    `json:"description" db:"description"`
-	Date        time.Time `json:"date" db:"date"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
-}
-
-// MaintenanceTask holds schedule workflows tracking vendor performance
-type MaintenanceTask struct {
-	ID             uuid.UUID `json:"id" db:"id"`
-	BuildingID     uuid.UUID `json:"building_id" db:"building_id"`
-	Component      string    `json:"component" db:"component"`
-	Status         string    `json:"status" db:"status"` // Scheduled, In-Progress, Completed, Paid
-	TargetDate     time.Time `json:"target_date" db:"target_date"`
-	ContractorName string    `json:"contractor_name" db:"contractor_name"`
-	Phone          string    `json:"phone" db:"phone"`   // mobile number for M-Pesa sandbox payouts
-	Amount         float64   `json:"amount" db:"amount"` // disbursement threshold
-	CreatedAt      time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at" db:"updated_at"`
+	ID          uuid.UUID `json:"id"`
+	BuildingID  uuid.UUID `json:"building_id"`
+	Phase       string    `json:"phase"`
+	Category    string    `json:"category"`
+	Amount      float64   `json:"amount"`
+	Description string    `json:"description"`
+	Date        time.Time `json:"date"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type ChartDataPoint struct {
 	Month       string  `json:"month"`
-	CapexBudget float64 `json:"capexBudget"`
-	CapexActual float64 `json:"capexActual"`
-	OpexBudget  float64 `json:"opexBudget"`
-	OpexActual  float64 `json:"opexActual"`
+	CapexBudget float64 `json:"capex_budget"`
+	CapexActual float64 `json:"capex_actual"`
+	OpexBudget  float64 `json:"opex_budget"`
+	OpexActual  float64 `json:"opex_actual"`
+}
+
+type MaintenanceTask struct {
+	ID                uuid.UUID `json:"id"`
+	PropertyID        uuid.UUID `json:"property_id"`
+	Component         string    `json:"component"`
+	Status            string    `json:"status"`
+	TargetDate        time.Time `json:"target_date"`
+	Contractor        string    `json:"contractor"`
+	Amount            float64   `json:"amount"`
+	Phone             string    `json:"phone"`
+	CheckoutRequestID *string   `json:"checkout_request_id,omitempty"`
+}
+
+type MpesaTransaction struct {
+	ID                uuid.UUID `json:"id"`
+	TaskID            uuid.UUID `json:"task_id"`
+	MerchantRequestID string    `json:"merchant_request_id"`
+	CheckoutRequestID string    `json:"checkout_request_id"`
+	ResultCode        int       `json:"result_code"`
+	ResultDesc        string    `json:"result_desc"`
+	MpesaReceiptNo    string    `json:"mpesa_receipt_number,omitempty"`
+	TransactionDate   time.Time `json:"transaction_date,omitempty"`
+	PhoneNumber       string    `json:"phone_number,omitempty"`
+	Amount            float64   `json:"amount,omitempty"`
+	Status            string    `json:"status"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
