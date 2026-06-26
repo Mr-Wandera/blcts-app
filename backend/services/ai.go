@@ -5,8 +5,9 @@ import (
 	"math/rand"
 	"time"
 
+	"blcts-backend/models" // 👈 CLEAN LOCAL PATH
+
 	"github.com/google/uuid"
-	"github.com/username/blcts-backend/models" // <-- FIXED: Matched path to your go.mod module declaration name
 )
 
 // AnomalyAlert tracks critical cost trends breaking nominal thresholds by over 20%
