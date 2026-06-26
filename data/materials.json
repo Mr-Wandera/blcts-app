@@ -1,0 +1,56 @@
+[
+  {
+    "id": "mat-1",
+    "name": "Bamburi Powermax Cement CEM I 42.5N",
+    "category": "Concrete & Cement",
+    "price": 920,
+    "unit": "50Kg Bag",
+    "supplier": "Bamburi Special Concrete",
+    "lastUpdated": "2026-06-15"
+  },
+  {
+    "id": "mat-2",
+    "name": "Deformed High-Yield Reinforcement Steel T12",
+    "category": "Structural Metal",
+    "price": 1450,
+    "unit": "12m Bar",
+    "supplier": "Apex Steel Kenya",
+    "lastUpdated": "2026-06-20"
+  },
+  {
+    "id": "mat-3",
+    "name": "Sika Waterproofing Damp-proof Membrane Compound",
+    "category": "Chemical Additives",
+    "price": 8500,
+    "unit": "20L Jerrycan",
+    "supplier": "Bamburi Special Concrete",
+    "lastUpdated": "2026-06-10"
+  },
+  {
+    "id": "mat-4",
+    "name": "Centralized Solar Water Heating Thermal Tube Array",
+    "category": "Renewable Energy",
+    "price": 185000,
+    "unit": "System Unit",
+    "supplier": "Davis & Shirtliff",
+    "lastUpdated": "2026-06-22"
+  },
+  {
+    "id": "mat-5",
+    "name": "Double-Glazed Low-Emissivity Solar Defense Panels",
+    "category": "Windows & Glazing",
+    "price": 7800,
+    "unit": "Square Meter",
+    "supplier": "Alumil Kenya Ltd",
+    "lastUpdated": "2026-06-18"
+  },
+  {
+    "id": "mat-6",
+    "name": "High-Efficiency VRF HVAC Outdoor Condenser 10HP",
+    "category": "HVAC Machinery",
+    "price": 420000,
+    "unit": "Unit Set",
+    "supplier": "Usoni Air Conditioning",
+    "lastUpdated": "2026-06-24"
+  }
+]

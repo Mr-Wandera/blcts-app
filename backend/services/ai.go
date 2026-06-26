@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/username/blcts-backend/models"
+	"github.com/username/blcts-backend/models" // Clean, direct models import with no alias
 )
 
 // AnomalyAlert tracks critical cost trends breaking nominal thresholds by over 20%
@@ -69,7 +69,7 @@ func GetAIPredictions(buildingID uuid.UUID, historicalCosts []models.CostEntry) 
 
 	// Mocking baseline control group if data hasn't accumulated in database
 	baselineUtilityAvg := 120000.0 // Normal KSh utility bill reference
-	recentUtilityBill := 148500.0  // Sample simulated anomalous record 
+	recentUtilityBill := 148500.0  // Sample simulated anomalous record
 
 	if utilityCount > 0 {
 		baselineUtilityAvg = currentUtilitiesTotal / float64(utilityCount)

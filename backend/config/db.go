@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/jackc/pgx/v5" // Added to support the pgx.Row return type
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -16,16 +15,18 @@ type PostgresPool struct {
 }
 
 // Exec executes statement changes
-// Updated to accept context.Context to match the handlers interface
-func (p *PostgresPool) Exec(ctx context.Context, query string, args ...interface{}) error {
-	_, err := p.Pool.Exec(ctx, query, args...)
+func (p *PostgresPool) Exec(query string, args ...interface{}) (err error) {
+	_, err = p.Pool.Exec(context.Background(), query, args...)
 	return err
 }
 
 // QueryRow fetches single records
-// Updated to accept context.Context and return native pgx.Row
-func (p *PostgresPool) QueryRow(ctx context.Context, query string, args ...interface{}) pgx.Row {
-	return p.Pool.QueryRow(ctx, query, args...)
+func (p *PostgresPool) QueryRow(query string, args ...interface{}) RowScanner {
+	return p.Pool.QueryRow(context.Background(), query, args...)
+}
+
+type RowScanner interface {
+	Scan(dest ...interface{}) error
 }
 
 // ConnectDatabase instantiates high-performance connections with pooling configs

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Menu,
   CheckCircle2,
@@ -13,7 +13,7 @@ import {
   Plus,
   Sun,
   Moon,
-  RefreshCw
+  LogOut
 } from "lucide-react";
 import {
   initialProperties,
@@ -22,17 +22,44 @@ import {
   getFinancialTrends,
   getAIInsights
 } from "./data";
-import { Property, CostEntry, MaintenanceTask, LifecyclePhase } from "./types";
+import { Property, CostEntry, MaintenanceTask, LifecyclePhase, User } from "./types";
 
 // Import modular sub-components for "Professional Polish" theme and chunked optimization
 import Sidebar from "./components/Sidebar";
 import ExecutiveDashboard from "./components/ExecutiveDashboard";
-import CostLedger from "./components/CostLedger";
 import VendorCenter from "./components/VendorCenter";
 import AddCostModal from "./components/AddCostModal";
-import MpesaPaymentModal from "./components/MpesaPaymentModal";
+import AuthScreen from "./components/AuthScreen";
+import LandingPage from "./components/LandingPage";
+import PropertyManagement from "./components/PropertyManagement";
+import CostEstimation from "./components/CostEstimation";
+import Reports from "./components/Reports";
+import { ActiveTabType } from "./types";
+
+
+
+const getInitials = (fullName: string) => {
+  if (!fullName) return "AW";
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return fullName.substring(0, 2).toUpperCase();
+};
 
 export default function App() {
+  // User Authentication state
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const stored = localStorage.getItem("blcts-user");
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const [showAuthOnly, setShowAuthOnly] = useState<boolean>(false);
+
   // Theme state manager (persisted in local storage)
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     try {
@@ -61,7 +88,8 @@ export default function App() {
   const [maintenanceTasks, setMaintenanceTasks] = useState<MaintenanceTask[]>(initialMaintenanceTasks);
   
   // UI states
-  const [activeTab, setActiveTab] = useState<"dashboard" | "ledger" | "vendors">("dashboard");
+  const [activeTab, setActiveTab] = useState<ActiveTabType>("dashboard");
+  const [currentLanguage, setCurrentLanguage] = useState<"en" | "sw">("en");
   const [searchQuery, setSearchQuery] = useState("");
   const [phaseFilter, setPhaseFilter] = useState<string>("All");
   
@@ -81,54 +109,9 @@ export default function App() {
   });
   const [formError, setFormError] = useState("");
 
-  // M-Pesa Disbursement Modal states
-  const [isMpesaModalOpen, setIsMpesaModalOpen] = useState(false);
-  const [activeMpesaTask, setActiveMpesaTask] = useState<MaintenanceTask | null>(null);
-  const [mpesaPhone, setMpesaPhone] = useState("");
-  const [mpesaStep, setMpesaStep] = useState<"idle" | "stk-sent" | "waiting-pin" | "completed">("idle");
-  const [mpesaTransactionId, setMpesaTransactionId] = useState("");
-
   // Toast notifications
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<"success" | "info" | "warning">("success");
-
-  // Step 4 Presentation Readiness Safeguard States
-  const [isBackendWaking, setIsBackendWaking] = useState<boolean>(true);
-  const [backendConnectionError, setBackendConnectionError] = useState<boolean>(false);
-
-  // Probe backend status to proactively handle Render Free-Tier spin up latencies
-  useEffect(() => {
-    const probeBackendHealth = async () => {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 7000); // Trigger fallback threshold fast
-
-        const res = await fetch("https://blcts-backend.onrender.com/api/health", { signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-          setIsBackendWaking(false);
-        } else {
-          throw new Error("Degraded status");
-        }
-      } catch (err) {
-        console.warn("Backend is cold-starting or unreachable. Retrying loop structural connectivity...");
-        // Keep checking periodically until server wakes up
-        const interval = setInterval(async () => {
-          try {
-            const retryRes = await fetch("https://blcts-backend.onrender.com/api/health");
-            if (retryRes.ok) {
-              setIsBackendWaking(false);
-              clearInterval(interval);
-            }
-          } catch (e) {
-            // Server is still waking up
-          }
-        }, 4000);
-      }
-    };
-
-    probeBackendHealth();
-  }, []);
 
   // Selected property helper
   const selectedProperty = useMemo(() => {
@@ -144,11 +127,32 @@ export default function App() {
     }, 4500);
   };
 
+  const handleLoginSuccess = (userPayload: User) => {
+    setCurrentUser(userPayload);
+    try {
+      localStorage.setItem("blcts-user", JSON.stringify(userPayload));
+    } catch (e) {}
+    triggerToast(`Welcome back, ${userPayload.name}! Access granted as ${userPayload.role}.`, "success");
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem("blcts-user");
+    } catch (e) {}
+    triggerToast("Logged out successfully. Secure session terminated.", "info");
+  };
+
   // Switch property
   const handlePropertyChange = (id: string) => {
     setSelectedPropertyId(id);
     setIsPropertyDropdownOpen(false);
     triggerToast(`Switched active property to: ${properties.find(p => p.id === id)?.name}`, "info");
+  };
+
+  // Update property cost parameters (TCO components)
+  const handleUpdateProperty = (updated: Property) => {
+    setProperties(prev => prev.map(p => p.id === updated.id ? updated : p));
   };
 
   // CAPEX, OPEX and TCO Calculations for the active property
@@ -157,7 +161,7 @@ export default function App() {
     
     const capexTotal = propCosts
       .filter(c => c.phase === "Construction")
-      .reduce((sum, item) => sum + item.amount, 0) + (selectedPropertyId === "prop-1" ? 120000000 : selectedPropertyId === "prop-2" ? 85000000 : 180000000);
+      .reduce((sum, item) => sum + item.amount, 0) + (selectedPropertyId === "prop-1" ? 120000000 : selectedPropertyId === "prop-2" ? 85000000 : 180000000); // base structural CAPEX estimates added to give realistic totals
       
     const opexTotal = propCosts
       .filter(c => c.phase === "Operational" || c.phase === "Maintenance")
@@ -167,16 +171,27 @@ export default function App() {
       .filter(t => t.propertyId === selectedPropertyId && t.status === "Paid")
       .reduce((sum, item) => sum + item.amount, 0);
 
+    // Dynamic calculations
     const combinedOpex = opexTotal + paidMaintenanceTotal;
     const totalCostOfOwnership = capexTotal + combinedOpex;
+
+    const lifecycleTco = (selectedProperty?.initialConstructionCost || 0) +
+      (selectedProperty?.materialCost || 0) +
+      (selectedProperty?.labourCost || 0) +
+      (selectedProperty?.maintenanceCost || 0) +
+      (selectedProperty?.utilityCost || 0) +
+      (selectedProperty?.repairCost || 0) +
+      (selectedProperty?.renovationCost || 0) +
+      (selectedProperty?.otherCost || 0);
 
     return {
       capex: capexTotal,
       opex: combinedOpex,
-      tco: totalCostOfOwnership,
+      tco: lifecycleTco > 0 ? lifecycleTco : totalCostOfOwnership,
+      lifecycleTco: lifecycleTco,
       entryCount: propCosts.length
     };
-  }, [costEntries, selectedPropertyId, maintenanceTasks]);
+  }, [costEntries, selectedPropertyId, maintenanceTasks, selectedProperty]);
 
   // AI insights based on Selected Property
   const activeInsights = useMemo(() => {
@@ -190,23 +205,23 @@ export default function App() {
 
   // SVG Chart drawing calculations
   const svgChartPaths = useMemo(() => {
-    // Step 1 Fallback Data Null Guard Verification Layer
-    if (!trendsData || trendsData.length === 0) {
-      return { capexBudgetPath: "", capexActualPath: "", opexActualPath: "", opexBudgetPath: "", capexFillPath: "", opexFillPath: "", coords: [] };
-    }
+    if (trendsData.length === 0) return { capexBudgetPath: "", capexActualPath: "", opexBudgetPath: "", opexActualPath: "", capexFillPath: "", opexFillPath: "", coords: [] };
     
+    // Scale points to draw beautiful smooth lines in SVG viewBox="0 0 600 200"
     const width = 600;
     const height = 200;
     const padding = 20;
     const chartWidth = width - padding * 2;
     const chartHeight = height - padding * 2;
 
+    // Find custom dynamic max val to scale chart coordinates precisely
     const allValues = trendsData.flatMap(d => [d.capexBudget, d.capexActual, d.opexBudget, d.opexActual]);
-    const maxVal = Math.max(...allValues) * 1.1;
+    const maxVal = (allValues.length > 0 ? Math.max(...allValues) : 1000000) * 1.1 || 1000000;
 
-    const getX = (index: number) => padding + (index / (trendsData.length - 1)) * chartWidth;
+    const getX = (index: number) => padding + (index / (trendsData.length - 1 || 1)) * chartWidth;
     const getY = (value: number) => padding + chartHeight - (value / maxVal) * chartHeight;
 
+    // Construct point strings
     let capexActualPoints = "";
     let capexBudgetPoints = "";
     let opexActualPoints = "";
@@ -228,6 +243,7 @@ export default function App() {
       opexBudgetPoints += `${i === 0 ? "M" : "L"} ${x} ${yOpexBud} `;
     });
 
+    // Create fill path strings
     const capexFillPath = `${capexActualPoints} L ${getX(trendsData.length - 1)} ${height - padding} L ${getX(0)} ${height - padding} Z`;
     const opexFillPath = `${opexActualPoints} L ${getX(trendsData.length - 1)} ${height - padding} L ${getX(0)} ${height - padding} Z`;
 
@@ -306,6 +322,7 @@ export default function App() {
     setCostEntries([newRecord, ...costEntries]);
     setIsAddModalOpen(false);
     
+    // Clear state
     setNewEntry({
       phase: "Operational",
       component: "",
@@ -316,8 +333,10 @@ export default function App() {
     });
     setFormError("");
 
+    // Trigger toast notification
     triggerToast(`Success: Recorded KSh ${parsedAmount.toLocaleString()} under ${phase} phase!`, "success");
 
+    // Also inject a Maintenance Schedule item if it is in the maintenance phase
     if (phase === "Maintenance") {
       const newTask: MaintenanceTask = {
         id: `maint-user-${Date.now()}`,
@@ -333,98 +352,67 @@ export default function App() {
     }
   };
 
-  // Open M-Pesa disbursement modal
-  const handleOpenMpesa = (task: MaintenanceTask) => {
-    setActiveMpesaTask(task);
-    setMpesaPhone(task.phone || "254712345678");
-    setMpesaStep("idle");
-    setMpesaTransactionId("");
-    setIsMpesaModalOpen(true);
-  };
-
-  // Live M-Pesa STK Push API execution handler
-  const handleInitiateMpesa = async () => {
-    if (!activeMpesaTask) return;
-    
-    setMpesaStep("stk-sent");
-
-    try {
-      const response = await fetch(`https://blcts-backend.onrender.com/api/maintenance/${activeMpesaTask.id}/stk`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ phone_number: mpesaPhone }) 
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to initiate M-Pesa STK Push");
-      }
-
-      setMpesaStep("waiting-pin");
-
-      setTimeout(() => {
-        const txId = "STK" + Math.random().toString(36).substring(2, 12).toUpperCase();
-        setMpesaTransactionId(txId);
-        setMpesaStep("completed");
-
-        setMaintenanceTasks(prev =>
-          prev.map(t => (t.id === activeMpesaTask.id ? { ...t, status: "Paid" } : t))
-        );
-
-        const alreadyExists = costEntries.some(e => e.component === activeMpesaTask.component && e.propertyId === selectedPropertyId);
-        if (!alreadyExists) {
-          const mpesaLedgerRecord: CostEntry = {
-            id: `cost-mpesa-${Date.now()}`,
-            propertyId: selectedPropertyId,
-            phase: "Maintenance",
-            component: activeMpesaTask.component,
-            amount: activeMpesaTask.amount,
-            date: new Date().toISOString().substring(0, 10),
-            contractor: activeMpesaTask.contractor,
-            status: "Paid",
-            description: `Mobile disbursement completed via API on ${mpesaPhone}. Ref ID: ${txId}`
-          };
-          setCostEntries(prev => [mpesaLedgerRecord, ...prev]);
-        }
-      }, 8000);
-
-    } catch (error) {
-      console.error("M-Pesa Error:", error);
-      triggerToast(`M-Pesa Error: ${(error as Error).message}`, "warning");
-      setMpesaStep("idle");
+  if (!currentUser) {
+    if (!showAuthOnly) {
+      return (
+        <div className={`min-h-screen ${isDarkMode ? "dark bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"} font-sans flex flex-col antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-205`}>
+          {/* Toast Notifications */}
+          {toastMessage && (
+            <div className="fixed top-4 right-4 z-50 flex items-center gap-3 bg-slate-950 text-white py-3 px-5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] border border-slate-900 animate-slide-in">
+              {toastType === "success" && <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0" />}
+              {toastType === "info" && <Info className="w-4.5 h-4.5 text-teal-400 shrink-0" />}
+              {toastType === "warning" && <AlertTriangle className="w-4.5 h-4.5 text-amber-400 shrink-0" />}
+              <div className="text-xs font-semibold tracking-wide">{toastMessage}</div>
+            </div>
+          )}
+          <LandingPage 
+            onEnterApp={() => {
+              // Direct instant administration sandbox mode
+              const guestAdmin: User = {
+                id: "user-demo-admin",
+                name: "Abdulwahab Wandera",
+                email: "wanderaabdulwahab4@gmail.com",
+                role: "Developer",
+                organization: "Wandera Investments Ltd",
+                phone: "+254 712 345 678"
+              };
+              handleLoginSuccess(guestAdmin);
+            }} 
+            onEnterAuth={(tab) => {
+              setShowAuthOnly(true);
+            }} 
+            isDarkMode={isDarkMode} 
+            toggleDarkMode={toggleTheme} 
+          />
+        </div>
+      );
     }
-  };
 
-  // Close M-Pesa modal and trigger celebratory alerts
-  const handleCloseMpesaSuccess = () => {
-    setIsMpesaModalOpen(false);
-    if (activeMpesaTask) {
-      triggerToast(`M-Pesa Payment of KSh ${activeMpesaTask.amount.toLocaleString()} fully Disbursed to ${activeMpesaTask.contractor}!`, "success");
-    }
-    setActiveMpesaTask(null);
-  };
-
-  // Step 4 Professional Presentation Loader Layout (Shields against white flash blank frames)
-  if (isBackendWaking) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white font-sans antialiased px-4 text-center">
-        <div className="relative flex items-center justify-center mb-6">
-          <div className="w-16 h-16 border-4 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin"></div>
-          <Building2 className="w-6 h-6 text-emerald-400 absolute animate-pulse" />
+      <div className={`min-h-screen ${isDarkMode ? "dark bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"} font-sans flex flex-col antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200 relative`}>
+        {/* Back navigation banner */}
+        <div className="absolute top-6 left-6 z-50">
+          <button 
+            onClick={() => setShowAuthOnly(false)} 
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 cursor-pointer shadow-sm transition-all hover:scale-95 active:scale-90"
+          >
+            ← Space Overview
+          </button>
         </div>
-        <h1 className="text-base font-black tracking-wider uppercase font-display bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-          BLCTS Enterprise Core Systems
-        </h1>
-        <p className="text-xs text-slate-400 mt-2 max-w-xs font-light leading-relaxed">
-          Waking up backend infrastructure cluster on Render free-tier instance pools. System will initialize automatically...
-        </p>
-        <div className="flex items-center gap-2 mt-6 text-[10px] bg-slate-900 px-4 py-1.5 rounded-full border border-slate-800 text-emerald-400 font-mono font-bold uppercase tracking-widest">
-          <RefreshCw className="w-3 h-3 animate-spin" />
-          <span>Status: Awaiting Handshake</span>
-        </div>
+
+        {/* Toast Notifications */}
+        {toastMessage && (
+          <div className="fixed top-4 right-4 z-50 flex items-center gap-3 bg-slate-950 text-white py-3 px-5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] border border-slate-900 animate-slide-in">
+            {toastType === "success" && <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0" />}
+            {toastType === "info" && <Info className="w-4.5 h-4.5 text-teal-400 shrink-0" />}
+            {toastType === "warning" && <AlertTriangle className="w-4.5 h-4.5 text-amber-400 shrink-0" />}
+            <div className="text-xs font-semibold tracking-wide">{toastMessage}</div>
+          </div>
+        )}
+        <AuthScreen 
+          onLoginSuccess={handleLoginSuccess} 
+          isDarkMode={isDarkMode} 
+        />
       </div>
     );
   }
@@ -458,6 +446,7 @@ export default function App() {
           setIsPropertyDropdownOpen={setIsPropertyDropdownOpen}
           selectedProperty={selectedProperty}
           entryCount={calculations.entryCount}
+          currentLanguage={currentLanguage}
         />
 
         {/* Outer overlay for mobile sidebar */}
@@ -492,39 +481,67 @@ export default function App() {
 
             {/* Top Navigation Utilities */}
             <div className="flex items-center gap-4">
+              {/* Add Cost Entry Button */}
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="bg-emerald-500 hover:bg-emerald-400 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-slate-950 dark:text-white font-bold text-[10px] sm:text-xs uppercase tracking-wider py-2 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Add Cost Entry</span>
+                <span className="inline sm:hidden">Add Cost</span>
+              </button>
+
+              {/* Alert Warning Count Indicator */}
               <div className="hidden md:flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-[10px] uppercase font-bold py-1 px-3 rounded-full border border-amber-250/50 dark:border-amber-800/40">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 animate-pulse" />
                 <span>{activeInsights.filter(i => i.type === "alert" || i.type === "warning").length} Warnings</span>
               </div>
 
+              {/* Theme Toggle Button */}
               <button
                 id="theme-toggle-btn"
                 onClick={toggleTheme}
                 className="p-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 transition-all cursor-pointer flex items-center justify-center relative group"
                 aria-label="Toggle Theme"
+                title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
               >
                 {isDarkMode ? (
-                  <Sun className="w-4 h-4 text-amber-400" />
+                  <Sun className="w-4 h-4 text-amber-400 transition-transform duration-300" />
                 ) : (
-                  <Moon className="w-4 h-4 text-slate-600" />
+                  <Moon className="w-4 h-4 text-slate-600 transition-transform duration-300" />
                 )}
+                {/* Tooltip hint */}
                 <span className="absolute -bottom-9 scale-0 group-hover:scale-100 transition-all duration-150 origin-top bg-slate-900 text-white text-[9px] font-bold px-2.5 py-1 rounded shadow-lg whitespace-nowrap z-50">
                   {isDarkMode ? "Light Mode" : "Dark Mode"}
                 </span>
               </button>
 
-              <div className="flex items-center gap-2.5 pl-3 border-l border-slate-100 dark:border-slate-800">
+              {/* Connected Dynamic Profile Info */}
+              <div className="flex items-center gap-3 pl-3 border-l border-slate-100 dark:border-slate-800">
                 <div className="text-right hidden sm:block">
-                  <span className="text-slate-955 dark:text-slate-100 text-xs font-bold block leading-none">
-                    Abdulwahab Wandera
+                  <span className="text-slate-950 dark:text-slate-100 text-xs font-bold block leading-none">
+                    {currentUser?.name || "Abdulwahab Wandera"}
                   </span>
-                  <span className="text-slate-400 dark:text-slate-500 text-[9px] block uppercase font-bold font-mono tracking-wider mt-1">
-                    SaaS Admin Account
+                  <span className="text-slate-400 dark:text-slate-500 text-[9px] block uppercase font-mono font-bold tracking-wider mt-1">
+                    {currentUser?.role || "SaaS Admin Account"}
                   </span>
                 </div>
                 <div className="w-9 h-9 rounded-xl bg-slate-950 dark:bg-slate-850 text-slate-100 font-extrabold text-xs flex items-center justify-center border border-slate-800 dark:border-slate-700 shadow-sm select-none">
-                  AW
+                  {currentUser ? getInitials(currentUser.name) : "AW"}
                 </div>
+                
+                {/* Modern Logout Button */}
+                <button
+                  onClick={handleLogout}
+                  className="p-1.5 rounded-xl border border-rose-200/50 dark:border-rose-950/50 text-rose-500 hover:text-rose-400 bg-rose-50/20 dark:bg-rose-955/20 hover:bg-rose-50/50 dark:hover:bg-rose-950/40 cursor-pointer transition-all shrink-0 flex items-center justify-center group relative h-8 w-8"
+                  title="Secure Session Terminate"
+                  aria-label="Secure Session Terminate"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="absolute -bottom-9 scale-0 group-hover:scale-100 transition-all duration-150 origin-top bg-rose-950 dark:bg-slate-900 text-white text-[9px] font-bold px-2.5 py-1 rounded shadow-lg whitespace-nowrap z-50">
+                    Secure Session Terminate
+                  </span>
+                </button>
               </div>
             </div>
           </header>
@@ -532,30 +549,6 @@ export default function App() {
           {/* Layout Content Body */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-7xl w-full mx-auto">
             
-            <div className="bg-slate-950 text-white rounded-2xl p-5 shadow-[0_4px_15px_rgba(15,23,42,0.05)] border border-slate-900 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex items-start gap-4 max-w-2xl">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/10">
-                  <Building2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white tracking-wider uppercase font-display">
-                    {selectedProperty.type} Asset Portfolio Log — {selectedProperty.name}
-                  </h4>
-                  <p className="text-xs text-slate-300 mt-1 leading-relaxed font-light">
-                    {selectedProperty.description}
-                  </p>
-                </div>
-              </div>
-              
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="w-full md:w-auto bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold text-xs uppercase tracking-wider py-2.5 px-5 rounded-xl shadow-lg focus:outline-none transition-all duration-200 shrink-0 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 animate-zoom-in"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Cost Entry</span>
-              </button>
-            </div>
-
             {/* TAB VIEWS */}
             {activeTab === "dashboard" && (
               <ExecutiveDashboard
@@ -569,26 +562,51 @@ export default function App() {
                 setSearchQuery={setSearchQuery}
                 phaseFilter={phaseFilter}
                 setPhaseFilter={setPhaseFilter}
-                handleOpenMpesa={handleOpenMpesa}
-                setActiveTab={setActiveTab}
+                setActiveTab={setActiveTab as any}
+                triggerToast={triggerToast}
+                costTrends={trendsData}
+                propertiesList={properties}
+                maintTasksList={maintenanceTasks}
+                onUpdateProperty={handleUpdateProperty}
+              />
+            )}
+
+            {activeTab === "properties-mgmt" && (
+              <PropertyManagement
+                properties={properties}
+                setProperties={setProperties}
+                selectedPropertyId={selectedPropertyId}
+                setSelectedPropertyId={setSelectedPropertyId}
+                costEntries={costEntries}
+                setCostEntries={setCostEntries}
+                maintenanceTasks={maintenanceTasks}
+                setMaintenanceTasks={setMaintenanceTasks}
+                currentLanguage={currentLanguage}
                 triggerToast={triggerToast}
               />
             )}
 
-            {activeTab === "ledger" && (
-              <CostLedger
-                filteredLedgerEntries={filteredLedgerEntries}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                phaseFilter={phaseFilter}
-                setPhaseFilter={setPhaseFilter}
+            {activeTab === "cost-estimation" && (
+              <CostEstimation
+                selectedProperty={selectedProperty}
+                triggerToast={triggerToast}
               />
             )}
 
-            {activeTab === "vendors" && (
+            {activeTab === "materials" && (
               <VendorCenter triggerToast={triggerToast} />
             )}
 
+            {activeTab === "reports" && (
+              <Reports
+                selectedProperty={selectedProperty}
+                costEntries={costEntries}
+                maintenanceTasks={maintenanceTasks}
+                triggerToast={triggerToast}
+              />
+            )}
+
+            {/* EDUCATION FOOTER OUTLINE ON TOTAL COST OF OWNERSHIP */}
             <footer className="bg-white rounded-2xl p-6 border border-slate-200/60 text-xs text-slate-500 space-y-3 leading-relaxed shadow-[0_1px_4px_rgba(0,0,0,0.01)] font-sans">
               <h4 className="font-bold text-slate-900 flex items-center gap-1.5 font-display">
                 <Building2 className="w-4.5 h-4.5 text-slate-700" />
@@ -598,7 +616,7 @@ export default function App() {
                 In Nairobi, Mombasa, and growing Kenyan municipalities, developers often succumb to the <strong>&quot;first-cost bias&quot;</strong>: evaluating structural components solely by their initial design invoices instead of forecasting 25-year cumulative durability limits. This leads to cheap roofing being purchased that fails in wet seasons, or poor-efficiency HVAC compressors inflating commercial power bills with inductive load charges from Kenya Power.
               </p>
               <p className="font-light">
-                <strong>BLCTS</strong> corrects this by visualizing the true <strong>Total Cost of Ownership (TCO)</strong>. It aggregates actual construction outlays with utility bills, and automates prompt contractor payout flows over a secure sandbox environment simulating mobile money disbursement.
+                <strong>BLCTS</strong> corrects this by visualizing the true <strong>Total Cost of Ownership (TCO)</strong>. It aggregates actual construction outlays with utility bills, enabling developers to model lifecycle costs, optimize materials selection, and make decisions that reduce operational expenditure.
               </p>
             </footer>
 
@@ -614,18 +632,6 @@ export default function App() {
         setNewEntry={setNewEntry}
         handleAddSubmit={handleAddSubmit}
         formError={formError}
-      />
-
-      <MpesaPaymentModal
-        isMpesaModalOpen={isMpesaModalOpen}
-        setIsMpesaModalOpen={setIsMpesaModalOpen}
-        activeMpesaTask={activeMpesaTask}
-        mpesaPhone={mpesaPhone}
-        setMpesaPhone={setMpesaPhone}
-        mpesaStep={mpesaStep}
-        mpesaTransactionId={mpesaTransactionId}
-        handleInitiateMpesa={handleInitiateMpesa}
-        handleCloseMpesaSuccess={handleCloseMpesaSuccess}
       />
 
     </div>

@@ -1,55 +1,21 @@
-package models
+package middleware
 
-import (
-	"time"
+import "net/http"
 
-	"github.com/google/uuid"
-)
+// CORS establishes structural cross-origin access control rules
+func CORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*") // Adjust to specific domain under production deployments
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
-type CostEntry struct {
-	ID          uuid.UUID `json:"id"`
-	BuildingID  uuid.UUID `json:"building_id"`
-	Phase       string    `json:"phase"`
-	Category    string    `json:"category"`
-	Amount      float64   `json:"amount"`
-	Description string    `json:"description"`
-	Date        time.Time `json:"date"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}
+		// Instantly satisfy HTTP preflight OPTIONS requests without routing overheads
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 
-type ChartDataPoint struct {
-	Month       string  `json:"month"`
-	CapexBudget float64 `json:"capex_budget"`
-	CapexActual float64 `json:"capex_actual"`
-	OpexBudget  float64 `json:"opex_budget"`
-	OpexActual  float64 `json:"opex_actual"`
-}
-
-type MaintenanceTask struct {
-	ID                uuid.UUID `json:"id"`
-	PropertyID        uuid.UUID `json:"property_id"`
-	Component         string    `json:"component"`
-	Status            string    `json:"status"`
-	TargetDate        time.Time `json:"target_date"`
-	Contractor        string    `json:"contractor"`
-	Amount            float64   `json:"amount"`
-	Phone             string    `json:"phone"`
-	CheckoutRequestID *string   `json:"checkout_request_id,omitempty"`
-}
-
-type MpesaTransaction struct {
-	ID                uuid.UUID `json:"id"`
-	TaskID            uuid.UUID `json:"task_id"`
-	MerchantRequestID string    `json:"merchant_request_id"`
-	CheckoutRequestID string    `json:"checkout_request_id"`
-	ResultCode        int       `json:"result_code"`
-	ResultDesc        string    `json:"result_desc"`
-	MpesaReceiptNo    string    `json:"mpesa_receipt_number,omitempty"`
-	TransactionDate   time.Time `json:"transaction_date,omitempty"`
-	PhoneNumber       string    `json:"phone_number,omitempty"`
-	Amount            float64   `json:"amount,omitempty"`
-	Status            string    `json:"status"`
-	CreatedAt         time.Time `json:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at"`
+		next.ServeHTTP(w, r)
+	})
 }

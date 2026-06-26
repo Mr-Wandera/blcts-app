@@ -15,7 +15,24 @@ export const initialProperties: Property[] = [
     opexBudget: 12000000,   // 12 Million KES annually
     healthGrade: "A",
     healthStatusText: "Optimal Efficiency",
-    description: "Multi-family premium development utilizing double-glazed solar defense glass, rainwater harvesting, and continuous concrete waterproofing. High durability choices yield low long-term operational expenses."
+    description: "Multi-family premium development utilizing double-glazed solar defense glass, rainwater harvesting, and continuous concrete waterproofing. High durability choices yield low long-term operational expenses.",
+    status: "Under Construction",
+    constructionStartDate: "2025-01-15",
+    completionDate: "2026-12-20",
+    initialConstructionCost: 145000000,
+    materialCost: 40000000,
+    labourCost: 25000000,
+    maintenanceCost: 12000000,
+    utilityCost: 8500000,
+    repairCost: 4500000,
+    renovationCost: 18000000,
+    otherCost: 3000000,
+    expectedLifecycleYears: 50,
+    floors: 14,
+    units: 56,
+    code: "KCH-001",
+    clientName: "Wandera Investments Ltd",
+    estimatedFloorArea: 5400
   },
   {
     id: "prop-2",
@@ -26,7 +43,24 @@ export const initialProperties: Property[] = [
     opexBudget: 24000000,  // 24 Million KES (Extremely high OPEX due to cheap materials)
     healthGrade: "C",
     healthStatusText: "High Maintenance Risk",
-    description: "Suburban logistics and retail hub. Uses sub-standard single-layer corrugated roofing sheets and standard low-efficiency HVAC motors. Suffers heavy 'first-cost bias' where low initial cost led to extreme utility and maintenance invoices."
+    description: "Suburban logistics and retail hub. Uses sub-standard single-layer corrugated roofing sheets and standard low-efficiency HVAC motors. Suffers heavy 'first-cost bias' where low initial cost led to extreme utility and maintenance invoices.",
+    status: "Under Construction",
+    constructionStartDate: "2025-03-01",
+    completionDate: "2026-11-15",
+    initialConstructionCost: 95000000,
+    materialCost: 30000000,
+    labourCost: 18000000,
+    maintenanceCost: 24000000,
+    utilityCost: 19500000,
+    repairCost: 8500000,
+    renovationCost: 12000000,
+    otherCost: 5000000,
+    expectedLifecycleYears: 30,
+    floors: 5,
+    units: 20,
+    code: "TCP-002",
+    clientName: "Kenyatta Road Associates",
+    estimatedFloorArea: 3200
   },
   {
     id: "prop-3",
@@ -37,7 +71,24 @@ export const initialProperties: Property[] = [
     opexBudget: 18000000,  // 18 Million KES
     healthGrade: "B",
     healthStatusText: "Good Standing",
-    description: "Premium office suite block. Equipped with automated LED grids and smart sensor integration. Features partial rooftop solar. Good durability, with predictable minor elevator and pump repairs scheduled."
+    description: "Premium office suite block. Equipped with automated LED grids and smart sensor integration. Features partial rooftop solar. Good durability, with predictable minor elevator and pump repairs scheduled.",
+    status: "Active",
+    constructionStartDate: "2023-06-10",
+    completionDate: "2025-04-18",
+    initialConstructionCost: 210000000,
+    materialCost: 60000000,
+    labourCost: 35000000,
+    maintenanceCost: 18000000,
+    utilityCost: 12000000,
+    repairCost: 6000000,
+    renovationCost: 25000000,
+    otherCost: 8000000,
+    expectedLifecycleYears: 40,
+    floors: 10,
+    units: 40,
+    code: "WES-003",
+    clientName: "Westlands Suites LLC",
+    estimatedFloorArea: 8000
   }
 ];
 

@@ -1,0 +1,57 @@
+[
+  {
+    "id": "cost-101",
+    "propertyId": "prop-1",
+    "phase": "Construction",
+    "component": "Foundation Waterproofing (Durability Upgrade)",
+    "amount": 8500000,
+    "date": "2024-03-12",
+    "contractor": "Bamburi Special Concrete",
+    "status": "Paid",
+    "description": "Waterproofing membrane additives included in foundations. Eliminated structural water ingress entirely."
+  },
+  {
+    "id": "cost-102",
+    "propertyId": "prop-1",
+    "phase": "Construction",
+    "component": "Double-Glazed Low-E Glass Installation",
+    "amount": 14200000,
+    "date": "2024-06-20",
+    "contractor": "Alumil Kenya Ltd",
+    "status": "Paid",
+    "description": "Premium glazing installed to decrease radiative heating, reducing HVAC cooling requirement by 35%."
+  },
+  {
+    "id": "cost-103",
+    "propertyId": "prop-1",
+    "phase": "Operational",
+    "component": "Rooftop Solar Battery Grid Power Draw",
+    "amount": 450000,
+    "date": "2026-04-10",
+    "contractor": "Kenya Power (Supplemental)",
+    "status": "Paid",
+    "description": "Monthly supplemental power draw grid invoice. Unusually low due to rooftop solar array contribution."
+  },
+  {
+    "id": "cost-104",
+    "propertyId": "prop-1",
+    "phase": "Maintenance",
+    "component": "Solar System Annual Inverter Tune-Up",
+    "amount": 180000,
+    "date": "2026-05-01",
+    "contractor": "Davis & Shirtliff",
+    "status": "Paid",
+    "description": "Preventative recalibration and cleaning of the centralized string inverters."
+  },
+  {
+    "id": "cost-201",
+    "propertyId": "prop-2",
+    "phase": "Construction",
+    "component": "Standard Corrugated Roofing (Economy Grade)",
+    "amount": 3200000,
+    "date": "2023-01-15",
+    "contractor": "Local Roofing Wholesalers",
+    "status": "Paid",
+    "description": "Low budget standard corrugated metal roofing installed. Resulted in minor leak alerts during monsoon cycles."
+  }
+]
