@@ -9,7 +9,13 @@ import {
   MapPin,
   FileText,
   Cpu,
-  Sparkles
+  Sparkles,
+  Wrench,
+  ShieldCheck,
+  Leaf,
+  Bell,
+  Users,
+  Boxes
 } from "lucide-react";
 import { Property, ActiveTabType } from "../types";
 
@@ -26,6 +32,7 @@ interface SidebarProps {
   selectedProperty: Property;
   entryCount: number;
   currentLanguage: "en" | "sw";
+  unreadNotifications?: number;
 }
 
 export default function Sidebar({
@@ -40,18 +47,33 @@ export default function Sidebar({
   setIsPropertyDropdownOpen,
   selectedProperty,
   entryCount,
-  currentLanguage
+  currentLanguage,
+  unreadNotifications = 0
 }: SidebarProps) {
-  
+
   const isEn = currentLanguage === "en";
 
   const t = {
     financialHeader: isEn ? "System Navigation" : "Urambazaji wa Mfumo",
     tipHeader: isEn ? "TCO Planning Insight" : "Kidokezo cha Upangaji TCO",
-    tipBody: isEn 
+    tipBody: isEn
       ? "Estimating Total Cost of Ownership (TCO) helps eliminate 'first-cost bias', saving developers over 35% in long-term building operations."
       : "Kukadiria Gharama ya Jumla ya Umiliki (TCO) husaidia kuondoa upendeleo wa gharama ya kwanza, na kuokoa hadi 35% ya gharama za uendeshaji."
   };
+
+  const navItems: { tab: ActiveTabType; label: string; icon: any; color: string; badge?: number }[] = [
+    { tab: "dashboard", label: "Dashboard", icon: Activity, color: "text-emerald-400" },
+    { tab: "properties-mgmt", label: "Projects", icon: Building, color: "text-emerald-450", badge: properties.filter(p => !p.isSoftDeleted).length },
+    { tab: "cost-estimation", label: "Cost Estimation", icon: Cpu, color: "text-cyan-400" },
+    { tab: "vendors", label: "Vendors & Materials", icon: Users, color: "text-amber-400" },
+    { tab: "assets", label: "Asset Management", icon: Boxes, color: "text-blue-400" },
+    { tab: "maintenance", label: "Maintenance", icon: Wrench, color: "text-orange-400" },
+    { tab: "ai-predictions", label: "AI Predictions", icon: Sparkles, color: "text-violet-400" },
+    { tab: "sustainability", label: "Sustainability", icon: Leaf, color: "text-green-400" },
+    { tab: "compliance", label: "Compliance", icon: ShieldCheck, color: "text-teal-400" },
+    { tab: "reports", label: "Reports", icon: FileText, color: "text-sky-400" },
+    { tab: "notifications", label: "Notifications", icon: Bell, color: "text-rose-400", badge: unreadNotifications },
+  ];
 
   return (
     <aside
@@ -100,7 +122,7 @@ export default function Sidebar({
           </div>
           <div className="flex items-center justify-between text-[10px] pt-1.5 border-t border-slate-800/60">
             <span className="text-slate-500">Status</span>
-            <span className="font-mono font-bold text-emerald-400">Active</span>
+            <span className="font-mono font-bold text-emerald-400">{selectedProperty.status || "Active"}</span>
           </div>
           <button
             onClick={() => { setActiveTab("properties-mgmt"); setIsMobileSidebarOpen(false); }}
@@ -112,78 +134,40 @@ export default function Sidebar({
       </div>
 
       {/* CORE NAVIGATION LINKS */}
-      <div className="flex-1 overflow-y-auto px-2 py-4 space-y-5 scrollbar-none">
-        
-        <div className="space-y-1">
-          <span className="text-[9px] uppercase font-bold text-slate-500 px-3 tracking-wide select-none block pb-1">
-            {t.financialHeader}
-          </span>
-          
-          <button
-            onClick={() => { setActiveTab("dashboard"); setIsMobileSidebarOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-              activeTab === "dashboard"
-                ? "bg-slate-900 text-white border-l-2 border-emerald-500 pl-2 shadow-inner font-extrabold"
-                : "text-slate-400 hover:text-white hover:bg-slate-900/40"
-            }`}
-          >
-            <Activity className="w-3.5 h-3.5 shrink-0" />
-            <span>Dashboard</span>
-          </button>
+      <div className="flex-1 overflow-y-auto px-2 py-4 space-y-1 scrollbar-none">
 
-          <button
-            onClick={() => { setActiveTab("properties-mgmt"); setIsMobileSidebarOpen(false); }}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-              activeTab === "properties-mgmt"
-                ? "bg-slate-900 text-white border-l-2 border-emerald-500 pl-2 shadow-inner font-extrabold"
-                : "text-slate-400 hover:text-white hover:bg-slate-900/40"
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <Building className="w-3.5 h-3.5 shrink-0 text-emerald-450" />
-              <span>Projects</span>
-            </div>
-            <span className="text-[9px] bg-emerald-950 text-emerald-400 font-mono px-1.5 py-0.5 rounded font-black border border-emerald-900">
-              {properties.filter(p => !p.isSoftDeleted).length}
-            </span>
-          </button>
+        <span className="text-[9px] uppercase font-bold text-slate-500 px-3 tracking-wide select-none block pb-1">
+          {t.financialHeader}
+        </span>
 
-          <button
-            onClick={() => { setActiveTab("cost-estimation"); setIsMobileSidebarOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-              activeTab === "cost-estimation"
-                ? "bg-slate-900 text-white border-l-2 border-emerald-500 pl-2 shadow-inner font-extrabold"
-                : "text-slate-400 hover:text-white hover:bg-slate-900/40"
-            }`}
-          >
-            <Cpu className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
-            <span>Cost Estimation</span>
-          </button>
-
-          <button
-            onClick={() => { setActiveTab("materials"); setIsMobileSidebarOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-              activeTab === "materials"
-                ? "bg-slate-900 text-white border-l-2 border-emerald-500 pl-2 shadow-inner font-extrabold"
-                : "text-slate-400 hover:text-white hover:bg-slate-900/40"
-            }`}
-          >
-            <Coins className="w-3.5 h-3.5 shrink-0 text-amber-400" />
-            <span>Materials</span>
-          </button>
-
-          <button
-            onClick={() => { setActiveTab("reports"); setIsMobileSidebarOpen(false); }}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-              activeTab === "reports"
-                ? "bg-slate-900 text-white border-l-2 border-emerald-500 pl-2 shadow-inner font-extrabold"
-                : "text-slate-400 hover:text-white hover:bg-slate-900/40"
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
-            <span>Reports</span>
-          </button>
-        </div>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.tab}
+              onClick={() => { setActiveTab(item.tab); setIsMobileSidebarOpen(false); }}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+                activeTab === item.tab
+                  ? "bg-slate-900 text-white border-l-2 border-emerald-500 pl-2 shadow-inner font-extrabold"
+                  : "text-slate-400 hover:text-white hover:bg-slate-900/40"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${activeTab === item.tab ? "text-emerald-400" : item.color}`} />
+                <span>{item.label}</span>
+              </div>
+              {item.badge !== undefined && item.badge > 0 && (
+                <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-black border ${
+                  item.tab === "notifications"
+                    ? "bg-rose-950 text-rose-400 border-rose-900"
+                    : "bg-emerald-950 text-emerald-400 border-emerald-900"
+                }`}>
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
 
       </div>
 

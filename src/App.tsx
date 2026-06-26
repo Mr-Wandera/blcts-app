@@ -19,10 +19,19 @@ import {
   initialProperties,
   initialCostEntries,
   initialMaintenanceTasks,
+  initialVendors,
+  initialMaterials,
+  initialAssets,
+  initialMaintenanceRecords,
+  initialCompliance,
+  initialSustainability,
+  initialPredictions,
+  initialAnomalies,
+  initialNotifications,
   getFinancialTrends,
   getAIInsights
 } from "./data";
-import { Property, CostEntry, MaintenanceTask, LifecyclePhase, User } from "./types";
+import { Property, CostEntry, MaintenanceTask, LifecyclePhase, User, Vendor, Material, Asset, MaintenanceRecord, ComplianceItem, SustainabilityMetric, AIPrediction, Anomaly, AppNotification } from "./types";
 
 // Import modular sub-components for "Professional Polish" theme and chunked optimization
 import Sidebar from "./components/Sidebar";
@@ -33,7 +42,13 @@ import AuthScreen from "./components/AuthScreen";
 import LandingPage from "./components/LandingPage";
 import PropertyManagement from "./components/PropertyManagement";
 import CostEstimation from "./components/CostEstimation";
-import Reports from "./components/Report"; // <-- FIXED: Changed from "./components/Reports" to match your singular file name "Report.tsx"
+import Reports from "./components/Report";
+import AssetManagement from "./components/AssetManagement";
+import MaintenanceManagement from "./components/MaintenanceManagement";
+import AIPredictions from "./components/AIPredictions";
+import Sustainability from "./components/Sustainability";
+import Compliance from "./components/Compliance";
+import Notifications from "./components/Notifications";
 import { ActiveTabType } from "./types";
 
 
@@ -86,6 +101,15 @@ export default function App() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>("prop-1");
   const [costEntries, setCostEntries] = useState<CostEntry[]>(initialCostEntries);
   const [maintenanceTasks, setMaintenanceTasks] = useState<MaintenanceTask[]>(initialMaintenanceTasks);
+  const [vendors] = useState<Vendor[]>(initialVendors);
+  const [materials] = useState<Material[]>(initialMaterials);
+  const [assets] = useState<Asset[]>(initialAssets);
+  const [maintenanceRecords] = useState<MaintenanceRecord[]>(initialMaintenanceRecords);
+  const [complianceItems] = useState<ComplianceItem[]>(initialCompliance);
+  const [sustainabilityMetrics] = useState<SustainabilityMetric[]>(initialSustainability);
+  const [predictions] = useState<AIPrediction[]>(initialPredictions);
+  const [anomalies] = useState<Anomaly[]>(initialAnomalies);
+  const [notifications] = useState<AppNotification[]>(initialNotifications);
   
   // UI states
   const [activeTab, setActiveTab] = useState<ActiveTabType>("dashboard");
@@ -447,6 +471,7 @@ export default function App() {
           selectedProperty={selectedProperty}
           entryCount={calculations.entryCount}
           currentLanguage={currentLanguage}
+          unreadNotifications={notifications.filter(n => !n.isRead).length}
         />
 
         {/* Outer overlay for mobile sidebar */}
@@ -568,6 +593,12 @@ export default function App() {
                 propertiesList={properties}
                 maintTasksList={maintenanceTasks}
                 onUpdateProperty={handleUpdateProperty}
+                vendors={vendors}
+                assets={assets}
+                compliance={complianceItems}
+                sustainability={sustainabilityMetrics}
+                predictions={predictions}
+                anomalies={anomalies}
               />
             )}
 
@@ -593,15 +624,72 @@ export default function App() {
               />
             )}
 
-            {activeTab === "materials" && (
-              <VendorCenter triggerToast={triggerToast} />
+            {activeTab === "vendors" && (
+              <VendorCenter vendors={vendors} materials={materials} triggerToast={triggerToast} />
+            )}
+
+            {activeTab === "assets" && (
+              <AssetManagement
+                assets={assets}
+                selectedPropertyId={selectedPropertyId}
+                triggerToast={triggerToast}
+              />
+            )}
+
+            {activeTab === "maintenance" && (
+              <MaintenanceManagement
+                maintenanceRecords={maintenanceRecords}
+                assets={assets}
+                selectedPropertyId={selectedPropertyId}
+                triggerToast={triggerToast}
+              />
+            )}
+
+            {activeTab === "ai-predictions" && (
+              <AIPredictions
+                predictions={predictions}
+                anomalies={anomalies}
+                selectedPropertyId={selectedPropertyId}
+                triggerToast={triggerToast}
+              />
+            )}
+
+            {activeTab === "sustainability" && (
+              <Sustainability
+                sustainability={sustainabilityMetrics}
+                selectedPropertyId={selectedPropertyId}
+                triggerToast={triggerToast}
+              />
+            )}
+
+            {activeTab === "compliance" && (
+              <Compliance
+                compliance={complianceItems}
+                selectedPropertyId={selectedPropertyId}
+                triggerToast={triggerToast}
+              />
+            )}
+
+            {activeTab === "notifications" && (
+              <Notifications
+                notifications={notifications}
+                selectedPropertyId={selectedPropertyId}
+                triggerToast={triggerToast}
+              />
             )}
 
             {activeTab === "reports" && (
               <Reports
                 selectedProperty={selectedProperty}
-                costEntries={costEntries}
-                maintenanceTasks={maintenanceTasks}
+                costEntries={costEntries.filter((e) => e.propertyId === selectedPropertyId)}
+                maintenanceTasks={maintenanceTasks.filter((t) => t.propertyId === selectedPropertyId)}
+                calculations={calculations}
+                predictions={predictions.filter((p) => p.propertyId === selectedPropertyId)}
+                anomalies={anomalies.filter((a) => a.propertyId === selectedPropertyId)}
+                compliance={complianceItems.filter((c) => c.propertyId === selectedPropertyId)}
+                sustainability={sustainabilityMetrics.filter((s) => s.propertyId === selectedPropertyId)}
+                vendors={vendors}
+                assets={assets.filter((a) => a.propertyId === selectedPropertyId)}
                 triggerToast={triggerToast}
               />
             )}

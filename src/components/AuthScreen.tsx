@@ -71,7 +71,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
           role: "Developer",
           organization: "Wandera Investments Ltd",
           phone: "+254 712 345 678",
-          passwordHash: "ef6a324bca81c1626f86b16eb3c4f964a7ef7527cf6bc09f1ba9a1b02bb3c5d6" // SHA-256 of "executivePass123"
+          passwordHash: "54b79259254eaed6593410bd63c089de0d797d2b4f020683060a21bbad6da5ed" // SHA-256 of "executivePass123"
         },
         {
           id: "user-demo-manager",
@@ -80,7 +80,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
           role: "Facility Manager",
           organization: "Thika Block Management",
           phone: "+254 722 987 654",
-          passwordHash: "57962450ba3fbf2a1490219ca7b587a8b4fc7eef6cf2f08eb010e95f6efb7835" // SHA-256 of "managerPass99"
+          passwordHash: "276cbf1e0dd8b5d1bd515780206dfbf0257d379494feefee8503f2d85e9a7c2a" // SHA-256 of "managerPass99"
         },
         {
           id: "user-demo-engineer",
@@ -89,7 +89,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
           role: "Maintenance Engineer",
           organization: "Davis & Shirtliff Tech",
           phone: "+254 733 445 566",
-          passwordHash: "c4600298a00cf16df8192837ff221efc3a2707f59d5bc5156a6fc03e622ef87c" // SHA-256 of "engineerPass22"
+          passwordHash: "02f0cdcbe300c5a93067cecb66b1aa7a78834a5af425c02f73b636f7745433fc" // SHA-256 of "engineerPass22"
         }
       ];
       localStorage.setItem("blcts-users", JSON.stringify(defaultUsers));

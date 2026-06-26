@@ -1,42 +1,19 @@
 import React from "react";
-import { 
-  Building2, 
-  Coins, 
-  TrendingUp, 
-  Sparkles, 
-  ArrowUpRight, 
-  Layers,
-  AlertCircle,
-  Lightbulb,
-  MapPin,
-  FileText,
-  CheckCircle,
-  Clock,
-  Settings
-} from "lucide-react";
-import { Property, AIInsight, ChartDataPoint } from "../types";
 import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
+  Building2, Coins, TrendingUp, Sparkles, Lightbulb, FileText,
+  Wrench, ShieldCheck, Leaf, Users, Gauge, Activity, AlertTriangle,
+  CheckCircle2, ArrowUpRight, ArrowDownRight, Zap, Droplet, Cloud
+} from "lucide-react";
+import { Property, AIInsight, ChartDataPoint, Vendor, Asset, ComplianceItem, SustainabilityMetric, AIPrediction, Anomaly } from "../types";
+import {
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
+  PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, RadialBarChart, RadialBar, Legend
 } from "recharts";
 
 interface ExecutiveDashboardProps {
   selectedProperty: Property;
   selectedPropertyId: string;
-  calculations: {
-    capex: number;
-    opex: number;
-    tco: number;
-    entryCount: number;
-  };
+  calculations: { capex: number; opex: number; tco: number; entryCount: number };
   svgChartPaths?: any;
   activeInsights?: AIInsight[];
   filteredTasks?: any[];
@@ -51,327 +28,239 @@ interface ExecutiveDashboardProps {
   propertiesList?: Property[];
   maintTasksList?: any[];
   onUpdateProperty?: (updated: Property) => void;
+  vendors?: Vendor[];
+  assets?: Asset[];
+  compliance?: ComplianceItem[];
+  sustainability?: SustainabilityMetric[];
+  predictions?: AIPrediction[];
+  anomalies?: Anomaly[];
 }
 
 export default function ExecutiveDashboard({
   selectedProperty,
+  selectedPropertyId,
   calculations,
   costTrends,
   propertiesList = [],
-  setActiveTab
+  activeInsights = [],
+  setActiveTab,
+  vendors = [],
+  assets = [],
+  compliance = [],
+  sustainability = [],
+  predictions = [],
+  anomalies = []
 }: ExecutiveDashboardProps) {
 
-  const activeProjectsCount = propertiesList.filter(p => !p.isSoftDeleted).length || 1;
-
-  // 1. Total Estimated Construction Cost for the selected property (or sum of all)
-  const estimatedConstructionCost = selectedProperty.capexBudget || 150000000;
-
-  // 2. Total Cost of Ownership (calculated or fallback)
-  const totalCostOfOwnership = calculations.tco || (estimatedConstructionCost + (selectedProperty.opexBudget * 10));
-
-  // 3. Cost Breakdown Data
-  const breakdownData = [
-    { name: "Structural Foundation", value: estimatedConstructionCost * 0.35, color: "#10b981" },
-    { name: "Superstructure Walls & Columns", value: estimatedConstructionCost * 0.30, color: "#3b82f6" },
-    { name: "Roofing & Insulation", value: estimatedConstructionCost * 0.15, color: "#f59e0b" },
-    { name: "Plumbing & Electrical Mains", value: estimatedConstructionCost * 0.12, color: "#ec4899" },
-    { name: "Fittings & Finishes", value: estimatedConstructionCost * 0.08, color: "#8b5cf6" },
-  ];
-
-  // 🛠️ FIXED: Formatting currency helper updated to accept loose types for Recharts
   const formatKSh = (value: any): string => {
-    const numericValue = Number(value);
-
-    if (isNaN(numericValue)) return "KSh 0";
-
-    if (numericValue >= 1000000) {
-      return `KSh ${(numericValue / 1000000).toFixed(1)}M`;
-    }
-
-    return `KSh ${numericValue.toLocaleString()}`;
+    const n = Number(value);
+    if (isNaN(n)) return "KSh 0";
+    if (n >= 1_000_000_000) return `KSh ${(n / 1_000_000_000).toFixed(1)}B`;
+    if (n >= 1_000_000) return `KSh ${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `KSh ${(n / 1_000).toFixed(0)}K`;
+    return `KSh ${n.toLocaleString()}`;
   };
 
-  // Pre-calculated data points for the Monthly Cost Trend Chart
+  const activeProjects = propertiesList.filter(p => !p.isSoftDeleted);
+  const totalProperties = activeProjects.length;
+  const activeProjectCount = activeProjects.filter(p => p.status === "Under Construction" || p.status === "Active").length;
+  const annualCapex = activeProjects.reduce((s, p) => s + (p.capexBudget || 0), 0);
+  const annualOpex = activeProjects.reduce((s, p) => s + (p.opexBudget || 0), 0);
+  const maintenanceCost = calculations.opex;
+  const lifecycleCost = calculations.tco;
+  const budgetUtilization = Math.min(100, Math.round((calculations.capex / (selectedProperty.capexBudget || 1)) * 100));
+  const activeContractors = new Set(vendors.filter(v => v.type === "Contractor").map(v => v.id)).size;
+  const vendorPerformance = vendors.length > 0 ? (vendors.reduce((s, v) => s + v.performanceRating, 0) / vendors.length) : 0;
+  const complianceScore = compliance.length > 0
+    ? Math.round((compliance.filter(c => c.status === "Compliant").length / compliance.length) * 100)
+    : 0;
+  const propSustainability = sustainability.filter(s => s.propertyId === selectedPropertyId);
+  const sustainabilityIndex = propSustainability.length > 0
+    ? Math.round(propSustainability.reduce((s, m) => s + m.greenBuildingScore, 0) / propSustainability.length)
+    : 0;
+  const aiConfidence = predictions.length > 0
+    ? Math.round(predictions.reduce((s, p) => s + p.confidenceScore, 0) / predictions.length)
+    : 0;
+
   const trendChartData = costTrends.map(item => ({
     month: item.month,
-    "Construction (CAPEX)": item.capexActual,
-    "Operations (OPEX)": item.opexActual,
+    "CAPEX": item.capexActual,
+    "OPEX": item.opexActual,
   }));
 
-  // Derive Recommendations from project variables
-  const getDynamicRecommendations = () => {
-    const recs = [];
-    if (selectedProperty.floors && selectedProperty.floors > 5) {
-      recs.push({
-        title: "Structure Refinement",
-        text: "Consider utilizing higher-grade reinforced structural concrete columns to support high-floor load profiles efficiently.",
-        color: "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20"
-      });
-    } else {
-      recs.push({
-        title: "Roofing Grade",
-        text: "Consider higher-grade durable insulated roofing materials to dramatically reduce long-term maintenance costs.",
-        color: "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20"
-      });
-    }
+  const capexVsOpexData = costTrends.map(item => ({
+    month: item.month,
+    "CAPEX": item.capexActual,
+    "OPEX": item.opexActual,
+  }));
 
-    if (selectedProperty.estimatedFloorArea && selectedProperty.estimatedFloorArea > 3000) {
-      recs.push({
-        title: "Energy Distribution",
-        text: "With a floor area exceeding 3,000 SQM, upgrading mechanical/electrical mains to smart LED grids will reduce 30-year operational OPEX by 14%.",
-        color: "text-blue-500 bg-blue-50 dark:bg-blue-950/20"
-      });
-    } else {
-      recs.push({
-        title: "Utility Optimization",
-        text: "Current project layout supports localized greywater recycling systems, compressing recurring plumbing SLAs.",
-        color: "text-blue-500 bg-blue-50 dark:bg-blue-950/20"
-      });
-    }
+  const breakdownData = [
+    { name: "Foundation", value: (selectedProperty.initialConstructionCost || 0) * 0.30, color: "#10b981" },
+    { name: "Superstructure", value: (selectedProperty.initialConstructionCost || 0) * 0.28, color: "#3b82f6" },
+    { name: "Roofing", value: (selectedProperty.initialConstructionCost || 0) * 0.15, color: "#f59e0b" },
+    { name: "MEP Systems", value: (selectedProperty.initialConstructionCost || 0) * 0.17, color: "#ec4899" },
+    { name: "Finishes", value: (selectedProperty.initialConstructionCost || 0) * 0.10, color: "#06b6d4" },
+  ];
 
-    recs.push({
-      title: "Structural Baseline",
-      text: selectedProperty.blueprintUrl 
-        ? "Blueprint analysis complete. Quantity survey parameters are fully synchronized with the local materials pricing indices."
-        : "Upload architectural plans to enable detailed structural quantity surveys and dynamic localized estimates.",
-      color: "text-amber-500 bg-amber-50 dark:bg-amber-950/20"
-    });
+  const maintenanceFreqData = [
+    { month: "Jan", count: 2 }, { month: "Feb", count: 1 }, { month: "Mar", count: 3 },
+    { month: "Apr", count: 2 }, { month: "May", count: 4 }, { month: "Jun", count: 2 }
+  ];
 
-    return recs;
+  const energyData = propSustainability.map(m => ({ month: m.month, kwh: m.electricityKwh, renewable: m.renewableEnergyKwh }));
+  const waterData = propSustainability.map(m => ({ month: m.month, litres: m.waterLitres }));
+  const carbonData = propSustainability.map(m => ({ month: m.month, emissions: m.carbonEmissionsKg }));
+
+  const vendorPerfData = vendors.map(v => ({
+    name: v.name.substring(0, 12),
+    rating: v.performanceRating,
+    onTime: v.deliveryOnTimeRate,
+  }));
+
+  const assetHealthData = assets.map(a => ({
+    name: a.name.substring(0, 15),
+    health: a.currentCondition === "New" ? 100 : a.currentCondition === "Good" ? 80 : a.currentCondition === "Fair" ? 55 : a.currentCondition === "Poor" ? 30 : 10,
+  }));
+
+  const forecastData = [...costTrends.map(t => ({ month: t.month, actual: t.opexActual, forecast: null as any })), ...[
+    { month: "Jul", actual: null, forecast: Math.round(calculations.opex * 1.05) },
+    { month: "Aug", actual: null, forecast: Math.round(calculations.opex * 1.08) },
+    { month: "Sep", actual: null, forecast: Math.round(calculations.opex * 1.12) },
+  ]];
+
+  const kpiCards = [
+    { label: "Total Properties", value: totalProperties.toString(), icon: Building2, color: "emerald", trend: null },
+    { label: "Active Projects", value: activeProjectCount.toString(), icon: Activity, color: "blue", trend: null },
+    { label: "Annual CAPEX", value: formatKSh(annualCapex), icon: Coins, color: "emerald", trend: "+5%" },
+    { label: "Annual OPEX", value: formatKSh(annualOpex), icon: TrendingUp, color: "blue", trend: "+12%" },
+    { label: "Maintenance Costs", value: formatKSh(maintenanceCost), icon: Wrench, color: "amber", trend: "-8%" },
+    { label: "Lifecycle Cost", value: formatKSh(lifecycleCost), icon: Gauge, color: "slate", trend: null },
+    { label: "Budget Utilization", value: `${budgetUtilization}%`, icon: Sparkles, color: "cyan", trend: null },
+    { label: "Active Contractors", value: activeContractors.toString(), icon: Users, color: "indigo", trend: null },
+    { label: "Vendor Performance", value: `${vendorPerformance.toFixed(1)}/5`, icon: CheckCircle2, color: "emerald", trend: null },
+    { label: "Compliance Score", value: `${complianceScore}%`, icon: ShieldCheck, color: complianceScore >= 80 ? "emerald" : "amber", trend: null },
+    { label: "Sustainability Index", value: `${sustainabilityIndex}/100`, icon: Leaf, color: "green", trend: null },
+    { label: "AI Confidence Index", value: `${aiConfidence}%`, icon: Sparkles, color: "violet", trend: null },
+  ];
+
+  const colorMap: Record<string, string> = {
+    emerald: "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400",
+    blue: "bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400",
+    amber: "bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400",
+    slate: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300",
+    cyan: "bg-cyan-50 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400",
+    indigo: "bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400",
+    green: "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400",
+    violet: "bg-violet-50 dark:bg-violet-950/20 text-violet-600 dark:text-violet-400",
   };
-
-  const currentRecommendations = getDynamicRecommendations();
 
   return (
     <div className="space-y-6 animate-fade-in text-left">
-      
-      {/* Current Project Summary Card */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white shadow-lg space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+
+      {/* Project Summary */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white shadow-lg">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-emerald-400" />
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-100 font-sans">
-              Project Summary
-            </h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-100">Project Summary</h3>
           </div>
           <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full font-mono font-bold uppercase tracking-wider border border-emerald-500/20">
-            Active Status
+            {selectedProperty.status || "Active"}
           </span>
         </div>
-
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 text-xs">
-          <div className="space-y-1">
-            <span className="text-[10px] text-slate-450 font-bold uppercase tracking-wider block">Project Name</span>
-            <span className="font-semibold text-slate-200 block truncate" title={selectedProperty.name}>{selectedProperty.name}</span>
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] text-slate-450 font-bold uppercase tracking-wider block">Location</span>
-            <span className="font-semibold text-slate-200 block truncate" title={selectedProperty.location}>{selectedProperty.location}</span>
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] text-slate-450 font-bold uppercase tracking-wider block">Building Type</span>
-            <span className="font-semibold text-slate-200 block">{selectedProperty.type || "Mixed-Use"}</span>
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] text-slate-450 font-bold uppercase tracking-wider block">Floor Area</span>
-            <span className="font-mono font-semibold text-slate-200 block">{(selectedProperty.estimatedFloorArea || 2500).toLocaleString()} SQM</span>
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] text-slate-450 font-bold uppercase tracking-wider block">Floors</span>
-            <span className="font-mono font-semibold text-slate-200 block">{selectedProperty.floors || 4} Levels</span>
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] text-slate-450 font-bold uppercase tracking-wider block">Blueprint Status</span>
-            <span className={`font-semibold block flex items-center gap-1 ${selectedProperty.blueprintUrl ? "text-emerald-400" : "text-slate-400"}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${selectedProperty.blueprintUrl ? "bg-emerald-400 animate-pulse" : "bg-slate-400"}`} />
-              {selectedProperty.blueprintUrl ? "Uploaded" : "Not Uploaded"}
-            </span>
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] text-slate-450 font-bold uppercase tracking-wider block">AI Analysis Status</span>
-            <span className={`font-semibold block flex items-center gap-1 ${selectedProperty.blueprintUrl ? "text-emerald-400" : "text-amber-400"}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${selectedProperty.blueprintUrl ? "bg-emerald-400" : "bg-amber-400"}`} />
-              {selectedProperty.blueprintUrl ? "Ready" : "Pending"}
-            </span>
-          </div>
+          <div className="space-y-1"><span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Project Name</span><span className="font-semibold text-slate-200 block truncate">{selectedProperty.name}</span></div>
+          <div className="space-y-1"><span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Location</span><span className="font-semibold text-slate-200 block truncate">{selectedProperty.location}</span></div>
+          <div className="space-y-1"><span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Building Type</span><span className="font-semibold text-slate-200 block">{selectedProperty.type || "Mixed-Use"}</span></div>
+          <div className="space-y-1"><span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Floor Area</span><span className="font-mono font-semibold text-slate-200 block">{(selectedProperty.estimatedFloorArea || 0).toLocaleString()} SQM</span></div>
+          <div className="space-y-1"><span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Floors</span><span className="font-mono font-semibold text-slate-200 block">{selectedProperty.floors || 0} Levels</span></div>
+          <div className="space-y-1"><span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Health Grade</span><span className={`font-semibold block ${selectedProperty.healthGrade === "A" ? "text-emerald-400" : selectedProperty.healthGrade === "C" ? "text-amber-400" : "text-slate-200"}`}>{selectedProperty.healthGrade || "N/A"}</span></div>
+          <div className="space-y-1"><span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Lifespan</span><span className="font-mono font-semibold text-slate-200 block">{selectedProperty.expectedLifecycleYears || 0} Years</span></div>
         </div>
       </div>
 
-      {/* CORE METRIC CARDS */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* Card 1: Estimated Construction Cost */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex items-center gap-4">
-          <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400">
-            <Coins className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider block">
-              Estimated Construction Cost
-            </span>
-            <span className="text-xl font-black tracking-tight text-slate-950 dark:text-white mt-1 block font-mono">
-              {formatKSh(estimatedConstructionCost)}
-            </span>
-          </div>
-        </div>
-
-        {/* Card 2: 30-Year TCO */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex items-center gap-4">
-          <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider block">
-              30-Year TCO
-            </span>
-            <span className="text-xl font-black tracking-tight text-slate-950 dark:text-white mt-1 block font-mono">
-              {formatKSh(totalCostOfOwnership)}
-            </span>
-          </div>
-        </div>
-
-        {/* Card 3: Blueprint Status */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex items-center gap-4">
-          <div className="p-3.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400">
-            <FileText className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider block">
-              Blueprint Status
-            </span>
-            <span className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1 block">
-              {selectedProperty.blueprintUrl ? "blueprint_active.pdf" : "No file uploaded"}
-            </span>
-          </div>
-        </div>
-
-        {/* Card 4: AI Analysis Status */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex items-center gap-4">
-          <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider block">
-              AI Analysis Status
-            </span>
-            <span className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1 block">
-              {selectedProperty.blueprintUrl ? "Verified & Synced" : "Pending Drawing"}
-            </span>
-          </div>
-        </div>
-
+      {/* 12 KPI Cards */}
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+        {kpiCards.map((kpi, i) => {
+          const Icon = kpi.icon;
+          return (
+            <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/60 dark:border-slate-800 shadow-sm flex flex-col gap-2 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div className={`p-2.5 rounded-xl ${colorMap[kpi.color]}`}>
+                  <Icon className="w-4.5 h-4.5" />
+                </div>
+                {kpi.trend && (
+                  <span className={`text-[9px] font-bold flex items-center gap-0.5 ${kpi.trend.startsWith("+") ? "text-rose-500" : "text-emerald-500"}`}>
+                    {kpi.trend.startsWith("+") ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                    {kpi.trend}
+                  </span>
+                )}
+              </div>
+              <div>
+                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">{kpi.label}</span>
+                <span className="text-lg font-black tracking-tight text-slate-950 dark:text-white block font-mono mt-0.5">{kpi.value}</span>
+              </div>
+            </div>
+          );
+        })}
       </section>
 
-      {/* HOW BLCTS WORKS CARD */}
-      <section className="bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-850 rounded-2xl p-6">
-        <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-emerald-500" />
-          How BLCTS Works
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-          <div className="relative flex flex-col items-center text-center p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-            <span className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-bold flex items-center justify-center mb-2">1</span>
-            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Create Project</span>
-            <span className="text-[9px] text-slate-400 mt-1">Set initial details</span>
-          </div>
-          <div className="hidden md:flex items-center justify-center text-slate-300">→</div>
-          
-          <div className="relative flex flex-col items-center text-center p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-            <span className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-bold flex items-center justify-center mb-2">2</span>
-            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Upload Drawing</span>
-            <span className="text-[9px] text-slate-400 mt-1">Drag PDF/JPG/PNG</span>
-          </div>
-          <div className="hidden md:flex items-center justify-center text-slate-300">→</div>
-
-          <div className="relative flex flex-col items-center text-center p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-            <span className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-bold flex items-center justify-center mb-2">3</span>
-            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">AI Analysis & Indices</span>
-            <span className="text-[9px] text-slate-400 mt-1">Extract dimensions</span>
-          </div>
-          <div className="hidden md:flex items-center justify-center text-slate-300">→</div>
-
-          <div className="relative flex flex-col items-center text-center p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-            <span className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-bold flex items-center justify-center mb-2">4</span>
-            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Generate TCO</span>
-            <span className="text-[9px] text-slate-400 mt-1">Evaluate 30-yr lifespan</span>
-          </div>
-        </div>
-      </section>
-
-      {/* CHARTS LAYER */}
+      {/* Charts Row 1: Monthly Cost Trends + CAPEX vs OPEX */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Left Card: Monthly Cost Trend Chart */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col justify-between">
-          <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              Monthly Cost Trend
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Distribution of construction CAPEX and operational OPEX over the last 6 months.
-            </p>
-          </div>
-          
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1">Monthly Cost Trends</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">CAPEX and OPEX distribution over 6 months</p>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="capexGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="opexGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
+                  <linearGradient id="capexG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.3} /><stop offset="95%" stopColor="#10b981" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="opexG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} /><stop offset="95%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient>
                 </defs>
                 <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
-                {/* 🛠️ FIXED: YAxis tickFormatter explicitly destructured to point to custom type-safe closure */}
-                <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" tickFormatter={(value) => formatKSh(value)} />
-                {/* 🛠️ FIXED: Tooltip formatter strictly typed via inline function context mapping */}
-                <Tooltip formatter={(value: any) => formatKSh(value)} contentStyle={{ fontSize: "11px", borderRadius: "8px" }} />
-                <Area type="monotone" dataKey="Construction (CAPEX)" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#capexGrad)" />
-                <Area type="monotone" dataKey="Operations (OPEX)" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#opexGrad)" />
+                <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" tickFormatter={(v) => formatKSh(v)} />
+                <Tooltip formatter={(v: any) => formatKSh(v)} contentStyle={{ fontSize: "11px", borderRadius: "8px" }} />
+                <Area type="monotone" dataKey="CAPEX" stroke="#10b981" strokeWidth={2} fill="url(#capexG)" />
+                <Area type="monotone" dataKey="OPEX" stroke="#3b82f6" strokeWidth={2} fill="url(#opexG)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Right Card: Cost Breakdown Chart */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col justify-between">
-          <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              Material Cost Distribution
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Component-level construction cost allocation for the active project.
-            </p>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1">CAPEX vs OPEX</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Comparative bar analysis of capital vs operational expenditure</p>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={capexVsOpexData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" tickFormatter={(v) => formatKSh(v)} />
+                <Tooltip formatter={(v: any) => formatKSh(v)} contentStyle={{ fontSize: "11px", borderRadius: "8px" }} />
+                <Legend wrapperStyle={{ fontSize: "10px" }} />
+                <Bar dataKey="CAPEX" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="OPEX" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
+        </div>
+      </section>
 
+      {/* Charts Row 2: Cost Distribution + Maintenance Frequency */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1">Cost Distribution</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Construction cost allocation by component</p>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 h-64">
             <div className="w-full sm:w-1/2 h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie
-                    data={breakdownData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {breakdownData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                  <Pie data={breakdownData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">
+                    {breakdownData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                   </Pie>
-                  {/* 🛠️ FIXED: Pie Chart tooltip formatting binding repaired */}
                   <Tooltip formatter={(val: any) => formatKSh(val)} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            
             <div className="w-full sm:w-1/2 space-y-2 text-xs">
               {breakdownData.map((item, index) => (
                 <div key={index} className="flex items-center justify-between">
@@ -379,39 +268,205 @@ export default function ExecutiveDashboard({
                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
                     <span className="text-slate-600 dark:text-slate-300 font-medium">{item.name}</span>
                   </div>
-                  <span className="font-semibold text-slate-900 dark:text-white font-mono">
-                    {formatKSh(item.value)}
-                  </span>
+                  <span className="font-semibold text-slate-900 dark:text-white font-mono">{formatKSh(item.value)}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1">Maintenance Frequency</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Monthly maintenance task count</p>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={maintenanceFreqData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                <Tooltip contentStyle={{ fontSize: "11px", borderRadius: "8px" }} />
+                <Bar dataKey="count" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Tasks" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </section>
 
-      {/* AI RECOMMENDATIONS GRID */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-emerald-500 animate-pulse" />
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-            Three Recent AI Recommendations
-          </h3>
+      {/* Charts Row 3: Energy + Water */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1 flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" /> Energy Consumption</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Electricity usage vs renewable generation (kWh)</p>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={energyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                <Tooltip contentStyle={{ fontSize: "11px", borderRadius: "8px" }} />
+                <Legend wrapperStyle={{ fontSize: "10px" }} />
+                <Bar dataKey="kwh" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Grid (kWh)" />
+                <Bar dataKey="renewable" fill="#10b981" radius={[4, 4, 0, 0]} name="Renewable (kWh)" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {currentRecommendations.map((rec, idx) => (
-            <div key={idx} className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-800 shadow-[0_1px_4px_rgba(0,0,0,0.01)] flex gap-4">
-              <div className="mt-0.5">
-                <Lightbulb className="w-5 h-5 text-amber-500 shrink-0" />
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1 flex items-center gap-2"><Droplet className="w-4 h-4 text-blue-500" /> Water Usage</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Monthly water consumption (litres)</p>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={waterData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs><linearGradient id="waterG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} /><stop offset="95%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient></defs>
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                <Tooltip contentStyle={{ fontSize: "11px", borderRadius: "8px" }} />
+                <Area type="monotone" dataKey="litres" stroke="#3b82f6" strokeWidth={2} fill="url(#waterG)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </section>
+
+      {/* Charts Row 4: Carbon + Vendor Performance */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1 flex items-center gap-2"><Cloud className="w-4 h-4 text-slate-500" /> Carbon Emissions</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Monthly CO2 emissions (kg)</p>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={carbonData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                <Tooltip contentStyle={{ fontSize: "11px", borderRadius: "8px" }} />
+                <Line type="monotone" dataKey="emissions" stroke="#64748b" strokeWidth={2} dot={{ r: 3 }} name="CO2 (kg)" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1">Vendor Performance</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Rating and on-time delivery rate by vendor</p>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={vendorPerfData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} layout="vertical">
+                <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 9 }} stroke="#94a3b8" width={80} />
+                <Tooltip contentStyle={{ fontSize: "11px", borderRadius: "8px" }} />
+                <Legend wrapperStyle={{ fontSize: "10px" }} />
+                <Bar dataKey="onTime" fill="#10b981" radius={[0, 4, 4, 0]} name="On-Time %" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </section>
+
+      {/* Charts Row 5: Asset Health + Predictive Forecasts */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1 flex items-center gap-2"><Gauge className="w-4 h-4 text-emerald-500" /> Asset Health</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Condition index by asset</p>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={assetHealthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="name" tick={{ fontSize: 8 }} stroke="#94a3b8" angle={-20} textAnchor="end" height={50} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                <Tooltip contentStyle={{ fontSize: "11px", borderRadius: "8px" }} />
+                <Bar dataKey="health" fill="#10b981" radius={[4, 4, 0, 0]} name="Health Index">
+                  {assetHealthData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.health >= 75 ? "#10b981" : entry.health >= 50 ? "#f59e0b" : "#ef4444"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-1 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-blue-500" /> Predictive Forecasts</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Actual vs AI-projected OPEX (next 3 months)</p>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={forecastData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" tickFormatter={(v) => formatKSh(v)} />
+                <Tooltip formatter={(v: any) => formatKSh(v)} contentStyle={{ fontSize: "11px", borderRadius: "8px" }} />
+                <Legend wrapperStyle={{ fontSize: "10px" }} />
+                <Line type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} name="Actual" connectNulls={false} />
+                <Line type="monotone" dataKey="forecast" stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} name="AI Forecast" connectNulls={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Insights + Anomalies */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-emerald-500" /> AI Insights
+          </h3>
+          <div className="space-y-3">
+            {activeInsights.map((insight, i) => (
+              <div key={i} className={`p-3 rounded-xl border ${insight.type === "alert" ? "border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/10" : insight.type === "warning" ? "border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/10" : "border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/10"}`}>
+                <div className="flex items-start gap-2">
+                  {insight.type === "alert" ? <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" /> : insight.type === "warning" ? <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" /> : <Lightbulb className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />}
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">{insight.title}</h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{insight.description}</p>
+                    <p className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 mt-1.5">{insight.financialImpact}</p>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-1">
-                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">
-                  {idx + 1}. {rec.title}
-                </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-light">
-                  {rec.text}
-                </p>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500" /> Active Anomalies
+          </h3>
+          <div className="space-y-3">
+            {anomalies.filter(a => !a.isResolved).slice(0, 4).map((anom) => (
+              <div key={anom.id} className={`p-3 rounded-xl border ${anom.severity === "Critical" ? "border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/10" : anom.severity === "High" ? "border-orange-200 dark:border-orange-900 bg-orange-50 dark:bg-orange-950/10" : "border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/10"}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{anom.category}</span>
+                  <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${anom.severity === "Critical" ? "bg-rose-500 text-white" : anom.severity === "High" ? "bg-orange-500 text-white" : "bg-amber-500 text-white"}`}>{anom.severity}</span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{anom.description}</p>
+                <p className="text-[10px] text-slate-600 dark:text-slate-300 mt-1 font-medium">→ {anom.recommendation}</p>
+              </div>
+            ))}
+            {anomalies.filter(a => !a.isResolved).length === 0 && (
+              <p className="text-xs text-slate-400 text-center py-4">No active anomalies detected</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* AI Predictions */}
+      <section className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-violet-500" /> AI Predictions
+          </h3>
+          {setActiveTab && (
+            <button onClick={() => setActiveTab("ai-predictions")} className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline uppercase tracking-wider">
+              View All →
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {predictions.slice(0, 3).map((pred) => (
+            <div key={pred.id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{pred.category}</span>
+                <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${pred.riskLevel === "Critical" ? "bg-rose-500 text-white" : pred.riskLevel === "High" ? "bg-orange-500 text-white" : pred.riskLevel === "Medium" ? "bg-amber-500 text-white" : "bg-emerald-500 text-white"}`}>{pred.riskLevel}</span>
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mb-2">{pred.prediction}</p>
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="text-slate-500">Confidence: <strong className="text-slate-800 dark:text-slate-200">{pred.confidenceScore}%</strong></span>
+                <span className="text-slate-500">{pred.timeframe}</span>
               </div>
             </div>
           ))}

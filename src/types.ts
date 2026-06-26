@@ -13,7 +13,6 @@ export interface Property {
   healthGrade: "A" | "B" | "C" | "D" | "N/A" | string;
   healthStatusText: string;
   description: string;
-  // Onboarding & property management extensions
   code?: string;
   clientName?: string;
   estimatedFloorArea?: number;
@@ -24,8 +23,10 @@ export interface Property {
   gps?: string;
   floors?: number;
   units?: number;
+  occupancy?: number;
   constructionStartDate?: string;
   completionDate?: string;
+  constructionYear?: number;
   initialConstructionCost?: number;
   materialCost?: number;
   labourCost?: number;
@@ -41,6 +42,14 @@ export interface Property {
   isSoftDeleted?: boolean;
   blueprintUrl?: string;
   observations?: string[];
+  buildingValue?: number;
+  replacementCost?: number;
+  depreciation?: number;
+  insuranceProvider?: string;
+  insurancePolicyNumber?: string;
+  insuranceExpiry?: string;
+  owner?: string;
+  developer?: string;
 }
 
 export type LifecyclePhase = "Construction" | "Operational" | "Maintenance" | "End-of-Life";
@@ -84,7 +93,17 @@ export interface AIInsight {
   recommendedAction: string;
 }
 
-export type UserRole = "Developer" | "Super Admin" | "Property Manager" | "Finance Officer" | "Maintenance Officer" | "Vendor" | "Auditor" | "Executive" | "Facility Manager" | "Maintenance Engineer";
+export type UserRole =
+  | "Developer"
+  | "Super Admin"
+  | "Property Manager"
+  | "Finance Officer"
+  | "Maintenance Officer"
+  | "Vendor"
+  | "Auditor"
+  | "Executive"
+  | "Facility Manager"
+  | "Maintenance Engineer";
 
 export interface User {
   id: string;
@@ -93,33 +112,39 @@ export interface User {
   role: UserRole;
   organization?: string;
   phone?: string;
-  // RBAC scoped permissions
-  scopeProperties?: string[]; // list of propertyIds allowed
+  scopeProperties?: string[];
 }
 
 export interface Asset {
   id: string;
   propertyId: string;
   name: string;
-  category: "HVAC Systems" | "Elevators" | "Solar Installations" | "Water Systems" | "Electrical Infrastructure" | "Security Systems" | "Generators" | "Fire Safety Equipment";
+  category: "HVAC Systems" | "Elevators" | "Solar Installations" | "Water Systems" | "Electrical Infrastructure" | "Security Systems" | "Generators" | "Fire Safety Equipment" | "Plumbing" | "Roofing" | "Structural Components";
   installationDate: string;
-  expectedLifespan: number; // in years
+  expectedLifespan: number;
   warrantyInfo: string;
   vendor: string;
   maintenanceSchedule: "Monthly" | "Quarterly" | "Bi-Annually" | "Annually";
   currentCondition: "New" | "Good" | "Fair" | "Poor" | "Critical";
+  replacementCost: number;
+  remainingUsefulLife?: number;
+  maintenanceHistory?: { date: string; description: string; cost: number }[];
 }
 
 export interface MaintenanceRecord {
   id: string;
   propertyId: string;
   assetId?: string;
-  type: "Preventive" | "Corrective" | "Scheduled" | "Emergency";
+  type: "Preventive" | "Corrective" | "Predictive" | "Emergency";
   cost: number;
   vendor: string;
   date: string;
   status: "Scheduled" | "In-Progress" | "Completed" | "Overdue";
   notes: string;
+  technician?: string;
+  downtime?: number;
+  partsUsed?: string;
+  labourHours?: number;
   attachments: string[];
 }
 
@@ -140,7 +165,8 @@ export interface AppNotification {
   propertyId?: string;
   title: string;
   message: string;
-  type: "maintenance" | "budget" | "contract" | "warranty" | "ai_recommendation";
+  type: "maintenance" | "budget" | "contract" | "warranty" | "ai_recommendation" | "compliance" | "equipment";
+  severity: "low" | "medium" | "high" | "critical";
   timestamp: string;
   isRead: boolean;
   channel: "in-app" | "email" | "both";
@@ -157,12 +183,111 @@ export interface AuditLog {
   propertyId?: string;
 }
 
-export type ActiveTabType = 
-  | "dashboard" 
+export interface Vendor {
+  id: string;
+  name: string;
+  type: "Contractor" | "Supplier" | "Consultant" | "Engineer";
+  category: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  address: string;
+  contractValue: number;
+  contractExpiry: string;
+  performanceRating: number;
+  deliveryOnTimeRate: number;
+  paymentTerms: string;
+  complianceCertified: boolean;
+  complianceExpiry?: string;
+  deliveryHistory: { date: string; item: string; status: "On-Time" | "Late" | "Cancelled"; value: number }[];
+  paymentHistory: { date: string; amount: number; status: "Paid" | "Pending" | "Overdue" }[];
+}
+
+export interface Material {
+  id: string;
+  name: string;
+  category: string;
+  supplier: string;
+  manufacturer: string;
+  unit: string;
+  currentPrice: number;
+  historicalPrices: { date: string; price: number }[];
+  leadTimeDays: number;
+  availability: "In Stock" | "Low Stock" | "Out of Stock" | "Pre-Order";
+  carbonFootprint: number;
+}
+
+export interface ComplianceItem {
+  id: string;
+  propertyId: string;
+  regulation: string;
+  category: "Building Codes" | "Fire Safety" | "OSHA" | "Environmental" | "Structural Inspection";
+  status: "Compliant" | "Non-Compliant" | "Pending Review" | "Expired";
+  lastInspectionDate: string;
+  nextInspectionDate: string;
+  authority: string;
+  notes: string;
+}
+
+export interface SustainabilityMetric {
+  id: string;
+  propertyId: string;
+  month: string;
+  electricityKwh: number;
+  waterLitres: number;
+  carbonEmissionsKg: number;
+  renewableEnergyKwh: number;
+  wasteGeneratedKg: number;
+  greenBuildingScore: number;
+}
+
+export interface AIPrediction {
+  id: string;
+  propertyId: string;
+  category: "Maintenance Cost" | "Operating Cost" | "Equipment Failure" | "Budget Overrun" | "Utility Consumption" | "Asset Replacement";
+  prediction: string;
+  predictedValue: number;
+  confidenceScore: number;
+  riskLevel: "Low" | "Medium" | "High" | "Critical";
+  recommendation: string;
+  supportingData: string;
+  timeframe: string;
+}
+
+export interface Anomaly {
+  id: string;
+  propertyId: string;
+  category: "Utility Spike" | "Maintenance Overrun" | "Vendor Overcharging" | "Budget Deviation" | "Equipment Failure" | "Energy Wastage" | "Water Leak";
+  description: string;
+  severity: "Low" | "Medium" | "High" | "Critical";
+  detectedValue: number;
+  expectedValue: number;
+  deviationPercent: number;
+  recommendation: string;
+  detectedAt: string;
+  isResolved: boolean;
+}
+
+export interface RiskItem {
+  id: string;
+  propertyId: string;
+  description: string;
+  category: "Financial" | "Operational" | "Structural" | "Compliance" | "Market";
+  probability: "Low" | "Medium" | "High";
+  impact: "Low" | "Medium" | "High" | "Critical";
+  mitigation: string;
+  status: "Open" | "Mitigated" | "Closed";
+}
+
+export type ActiveTabType =
+  | "dashboard"
   | "properties-mgmt"
   | "cost-estimation"
+  | "vendors"
+  | "assets"
+  | "maintenance"
+  | "ai-predictions"
+  | "sustainability"
+  | "compliance"
   | "reports"
-  | "materials";
-
-
-
+  | "notifications";

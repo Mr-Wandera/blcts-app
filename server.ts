@@ -181,7 +181,7 @@ function ensureDatabase() {
       role: "Developer",
       organization: "Wandera Investments Ltd",
       phone: "+254 712 345 678",
-      passwordHash: "ef6a324bca81c1626f86b16eb3c4f964a7ef7527cf6bc09f1ba9a1b02bb3c5d6" // hash of "executivePass123"
+      passwordHash: "54b79259254eaed6593410bd63c089de0d797d2b4f020683060a21bbad6da5ed" // hash of "executivePass123"
     },
     {
       id: "user-demo-manager",
@@ -190,7 +190,7 @@ function ensureDatabase() {
       role: "Facility Manager",
       organization: "Thika Block Management",
       phone: "+254 722 987 654",
-      passwordHash: "57962450ba3fbf2a1490219ca7b587a8b4fc7eef6cf2f08eb010e95f6efb7835" // hash of "managerPass99"
+      passwordHash: "276cbf1e0dd8b5d1bd515780206dfbf0257d379494feefee8503f2d85e9a7c2a" // hash of "managerPass99"
     }
   ];
 
