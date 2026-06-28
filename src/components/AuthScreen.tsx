@@ -397,7 +397,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
                           placeholder="e.g. Abdulwahab Wandera"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white text-slate-900 dark:text-white font-medium"
+                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-slate-100 caret-slate-900 dark:caret-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium"
                         />
                         <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
                       </div>
@@ -415,7 +415,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
                         placeholder="e.g. wanderaabdulwahab4@gmail.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white text-slate-900 dark:text-white font-medium"
+                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-slate-100 caret-slate-900 dark:caret-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium"
                       />
                       <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
                     </div>
@@ -431,7 +431,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
                         <select
                           value={role}
                           onChange={(e) => setRole(e.target.value as any)}
-                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white text-slate-900 dark:text-white font-semibold cursor-pointer appearance-none"
+                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-slate-100 caret-slate-900 dark:caret-slate-100 font-semibold cursor-pointer appearance-none"
                         >
                           <option value="Developer">Developer</option>
                           <option value="Facility Manager">Facility Manager</option>
@@ -450,7 +450,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
                           placeholder="e.g. +254 712 345 678"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white text-slate-900 dark:text-white font-mono"
+                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-slate-100 caret-slate-900 dark:caret-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 font-mono"
                         />
                         <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
                       </div>
@@ -466,7 +466,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
                       placeholder="e.g. Wandera Investments Ltd"
                       value={organization}
                       onChange={(e) => setOrganization(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white text-slate-900 dark:text-white"
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-slate-100 caret-slate-900 dark:caret-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                     />
                   </div>
 
@@ -488,7 +488,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 pr-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white text-slate-900 dark:text-white font-mono"
+                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 pr-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-slate-100 caret-slate-900 dark:caret-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 font-mono"
                       />
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
                       <button

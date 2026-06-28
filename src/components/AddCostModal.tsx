@@ -152,7 +152,7 @@ export default function AddCostModal({
                 value={newEntry.component}
                 onChange={e => handleComponentChange(e.target.value)}
                 onFocus={() => setShowPresets(true)}
-                className="w-full bg-slate-50 dark:bg-slate-900 dark:text-white border border-slate-200/60 dark:border-slate-800 rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 focus:bg-white transition-all text-slate-800 font-medium font-mono"
+                className="w-full bg-slate-50 dark:bg-slate-900 dark:text-slate-100 border border-slate-200/60 dark:border-slate-800 rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 caret-slate-900 dark:caret-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium font-mono"
               />
               <Search className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
             </div>
@@ -209,7 +209,7 @@ export default function AddCostModal({
                 placeholder="e.g. 450,000"
                 value={newEntry.amount}
                 onChange={e => setNewEntry({ ...newEntry, amount: e.target.value })}
-                className="w-full bg-slate-50 dark:bg-slate-900 dark:text-white border border-slate-200/60 dark:border-slate-800 rounded-xl py-2 px-3 text-xs font-mono font-bold focus:outline-none focus:border-emerald-500 focus:bg-white transition-all text-slate-900"
+                className="w-full bg-slate-50 dark:bg-slate-900 dark:text-slate-100 border border-slate-200/60 dark:border-slate-800 rounded-xl py-2 px-3 text-xs font-mono font-bold focus:outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-900 caret-slate-900 dark:caret-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
 
@@ -224,7 +224,7 @@ export default function AddCostModal({
                 placeholder="e.g. Kenya Power, Davis & Shirtliff"
                 value={newEntry.contractor}
                 onChange={e => setNewEntry({ ...newEntry, contractor: e.target.value })}
-                className="w-full bg-slate-50 dark:bg-slate-900 dark:text-white border border-slate-200/60 dark:border-slate-800 rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 focus:bg-white transition-all text-slate-800 font-medium"
+                className="w-full bg-slate-50 dark:bg-slate-900 dark:text-slate-100 border border-slate-200/60 dark:border-slate-800 rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 caret-slate-900 dark:caret-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium"
               />
             </div>
           </div>
@@ -239,7 +239,7 @@ export default function AddCostModal({
               required
               value={newEntry.date}
               onChange={e => setNewEntry({ ...newEntry, date: e.target.value })}
-              className="w-full bg-slate-50 dark:bg-slate-900 dark:text-white border border-slate-200/60 dark:border-slate-800 rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 focus:bg-white transition-all text-slate-800"
+              className="w-full bg-slate-50 dark:bg-slate-900 dark:text-slate-100 border border-slate-200/60 dark:border-slate-800 rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 caret-slate-900 dark:caret-slate-100"
             />
           </div>
 
@@ -253,7 +253,7 @@ export default function AddCostModal({
               placeholder="Record material qualities, thickness indicators, or efficiency metrics here..."
               value={newEntry.description}
               onChange={e => setNewEntry({ ...newEntry, description: e.target.value })}
-              className="w-full bg-slate-50 dark:bg-slate-900 dark:text-white border border-slate-200/60 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs focus:outline-none focus:border-emerald-500 focus:bg-white transition-all text-slate-800 font-light"
+              className="w-full bg-slate-50 dark:bg-slate-900 dark:text-slate-100 border border-slate-200/60 dark:border-slate-800 rounded-xl py-2.5 px-3 text-xs focus:outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 caret-slate-900 dark:caret-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 font-light"
             />
           </div>
 

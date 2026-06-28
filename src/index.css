@@ -89,10 +89,23 @@
 /* Ensure typed text and caret are always visible in both themes.
    Browsers paint autofill with a light background + dark text; override
    -webkit-text-fill-color so the authored text color wins in dark mode. */
-input:not([type="checkbox"]):not([type="radio"]),
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 textarea,
 select {
   caret-color: currentColor;
+}
+
+/* Safety net: if an input flips to a light bg on focus (focus:bg-white)
+   without a dark:focus: counterpart, force the text dark so it stays readable. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+textarea:focus,
+select:focus {
+  color: #0f172a;
+}
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+.dark textarea:focus,
+.dark select:focus {
+  color: #f1f5f9;
 }
 
 input:-webkit-autofill,
