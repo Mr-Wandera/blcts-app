@@ -17,7 +17,6 @@ interface ExecutiveDashboardProps {
   setSearchQuery?: (query: string) => void;
   phaseFilter?: string;
   setPhaseFilter?: (filter: string) => void;
-  handleOpenMpesa?: (task: any) => void;
   setActiveTab?: (tab: any) => void;
   triggerToast?: (msg: string, type?: "success" | "info" | "warning") => void;
   costTrends: ChartDataPoint[];
@@ -127,9 +126,9 @@ export default function ExecutiveDashboard({
   const kpiCards = [
     { label: "Total Properties", value: totalProperties.toString(), icon: Building2, color: "emerald", trend: null },
     { label: "Active Projects", value: activeProjectCount.toString(), icon: Activity, color: "blue", trend: null },
-    { label: "Annual CAPEX", value: formatKSh(annualCapex), icon: Coins, color: "emerald", trend: "+5%" },
-    { label: "Annual OPEX", value: formatKSh(annualOpex), icon: TrendingUp, color: "blue", trend: "+12%" },
-    { label: "Maintenance Costs", value: formatKSh(maintenanceCost), icon: Wrench, color: "amber", trend: "-8%" },
+    { label: "Annual CAPEX", value: formatKSh(annualCapex), icon: Coins, color: "emerald", trend: null },
+    { label: "Annual OPEX", value: formatKSh(annualOpex), icon: TrendingUp, color: "blue", trend: null },
+    { label: "Maintenance Costs", value: formatKSh(maintenanceCost), icon: Wrench, color: "amber", trend: null },
     { label: "Lifecycle Cost", value: formatKSh(lifecycleCost), icon: Gauge, color: "slate", trend: null },
     { label: "Budget Utilization", value: `${budgetUtilization}%`, icon: Sparkles, color: "cyan", trend: null },
     { label: "Active Contractors", value: activeContractors.toString(), icon: Users, color: "indigo", trend: null },

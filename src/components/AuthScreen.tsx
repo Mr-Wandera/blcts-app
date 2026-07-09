@@ -29,7 +29,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<"Developer" | "Facility Manager" | "Building Owner">("Developer");
+  const [role, setRole] = useState<"Administrator" | "Facility Manager" | "Building Owner">("Administrator");
   const [organization, setOrganization] = useState("Wandera Investments Ltd");
   
   const [showPassword, setShowPassword] = useState(false);
@@ -45,7 +45,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
       setEmail("admin@blcts.com");
       setPassword("adminPass123");
       setName("Abdulwahab Wandera");
-      setRole("Developer");
+      setRole("Administrator");
       setOrganization("Wandera Investments Ltd");
       setPhone("+254 712 345 678");
     } else if (preset === "manager") {
@@ -74,7 +74,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
         id: "user-admin",
         email: "admin@blcts.com",
         name: "Abdulwahab Wandera",
-        role: "Developer",
+        role: "Administrator",
         organization: "Wandera Investments Ltd",
         phone: "+254 712 345 678",
         passwordHash: "4b971cafd7903d148bda8f8aa7faa57b769cded513ecb31e124d1e010a80555f" // SHA-256 of "adminPass123"
@@ -144,17 +144,17 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
     
     setTimeout(() => {
       setAuthStatus("syncing_sensor");
-      setSyncMessage("Synchronizing local building IoT sensors and thermal logs...");
+      setSyncMessage("Loading building portfolio and cost data...");
     }, 1200);
 
     setTimeout(() => {
       setAuthStatus("finalizing");
-      setSyncMessage("Establishing secure Daraja M-PESA sandbox gateway...");
+      setSyncMessage("Finalizing session and preparing dashboard...");
     }, 2400);
 
     setTimeout(() => {
       setAuthStatus("success");
-      setSyncMessage("Verification complete. Redirecting you to the asset deck...");
+      setSyncMessage("Verification complete. Redirecting to your dashboard...");
       setTimeout(() => {
         onLoginSuccess(userPayload);
       }, 700);
@@ -292,7 +292,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
               Maximize Asset Integrity, Eliminate First-Cost Bias
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-light">
-              Nairobi&apos;s leading platform optimizing commercial building structures. Forecast 25-Year cumulative material wear, track active solar utility yields, and streamline mobile contractor payouts securely.
+              A comprehensive platform for tracking building lifecycle costs. Forecast long-term material wear, compute total cost of ownership, and leverage AI-enhanced analytics for smarter financial decisions.
             </p>
           </div>
 
@@ -304,10 +304,10 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
               </div>
               <div>
                 <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider font-display">
-                  Live IoT Telemetry Loop
+                  AI-Enhanced Analytics
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5 leading-snug">
-                  Continuously streams temperature, power factor, pressure anomalies, and vibration offsets.
+                  Predicts maintenance costs, detects budget anomalies, and recommends preventive actions.
                 </p>
               </div>
             </div>
@@ -321,7 +321,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
                   TCO Forecast Engine
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                  Visualizes actual cumulative outlays across a 30-year operational horizon in beautiful charts.
+                  Computes total cost of ownership across the full building lifecycle with regional pricing.
                 </p>
               </div>
             </div>
@@ -332,10 +332,10 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
               </div>
               <div>
                 <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider font-display">
-                  Safaricom Daraja API Sync
+                  Secure Role-Based Access
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                  Execute instant contractor M-Pesa payouts directly inside the maintenance log hub.
+                  Separate dashboards and permissions for administrators, facility managers, and building owners.
                 </p>
               </div>
             </div>
@@ -467,7 +467,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
                           onChange={(e) => setRole(e.target.value as any)}
                           className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-slate-100 caret-slate-900 dark:caret-slate-100 font-semibold cursor-pointer appearance-none"
                         >
-                          <option value="Developer">Administrator</option>
+                          <option value="Administrator">Administrator</option>
                           <option value="Facility Manager">Facility Manager</option>
                           <option value="Building Owner">Building Owner / Developer</option>
                         </select>
@@ -477,7 +477,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
 
                     <div className="space-y-1.5">
                       <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block font-display">
-                        Mobile Money Contact (KES Draw)
+                        Contact Number
                       </label>
                       <div className="relative">
                         <input
@@ -511,9 +511,9 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
                         Secret Password *
                       </label>
                       {activeTab === "login" && (
-                        <button type="button" className="text-[10px] text-emerald-500 dark:text-emerald-400 font-bold hover:underline">
-                          Forgot passcode?
-                        </button>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                          Use a demo account for quick access
+                        </span>
                       )}
                     </div>
                     <div className="relative">

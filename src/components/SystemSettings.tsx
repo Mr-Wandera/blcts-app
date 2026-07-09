@@ -142,7 +142,7 @@ export default function SystemSettingsPanel({
           {([
             { key: "inApp" as const, label: "In-App Notifications", desc: "Show notifications within the platform interface" },
             { key: "email" as const, label: "Email Notifications", desc: "Send alerts to user email addresses" },
-            { key: "sms" as const, label: "SMS Notifications", desc: "Send critical alerts via SMS (M-Pesa integration)" }
+            { key: "sms" as const, label: "SMS Notifications", desc: "Send critical alerts via SMS text messaging" }
           ]).map(ch => (
             <div key={ch.key} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 rounded-xl">
               <div>

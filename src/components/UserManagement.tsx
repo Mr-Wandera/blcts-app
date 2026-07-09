@@ -12,7 +12,7 @@ interface StoredUser extends User {
   passwordHash?: string;
 }
 
-const allRoles: UserRole[] = ["Developer", "Super Admin", "Executive", "Finance Officer", "Auditor", "Facility Manager", "Maintenance Engineer", "Property Manager", "Vendor"];
+const allRoles: UserRole[] = ["Administrator", "Super Admin", "Executive", "Finance Officer", "Auditor", "Facility Manager", "Maintenance Engineer", "Property Manager", "Vendor", "Building Owner"];
 
 export default function UserManagement({ currentUser, triggerToast }: UserManagementProps) {
   const [users, setUsers] = useState<StoredUser[]>([]);

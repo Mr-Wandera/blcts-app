@@ -94,7 +94,7 @@ export interface AIInsight {
 }
 
 export type UserRole =
-  | "Developer"
+  | "Administrator"
   | "Super Admin"
   | "Property Manager"
   | "Finance Officer"
@@ -336,7 +336,7 @@ export interface SystemSettings {
   auditLogs: AuditLog[];
 }
 
-export const ADMIN_ROLES: UserRole[] = ["Developer", "Super Admin", "Executive", "Finance Officer", "Auditor"];
+export const ADMIN_ROLES: UserRole[] = ["Administrator", "Super Admin", "Executive", "Finance Officer", "Auditor"];
 
 export const FM_ROLES: UserRole[] = ["Facility Manager", "Maintenance Engineer", "Property Manager"];
 

@@ -410,9 +410,9 @@ export const initialSystemSettings: SystemSettings = {
     sms: false
   },
   auditLogs: [
-    { id: "log-1", timestamp: "2026-07-04T08:00:00Z", userId: "user-admin", userName: "Abdulwahab Wandera", role: "Developer", action: "System Login", details: "Administrator logged into platform dashboard" },
+    { id: "log-1", timestamp: "2026-07-04T08:00:00Z", userId: "user-admin", userName: "Abdulwahab Wandera", role: "Administrator", action: "System Login", details: "Administrator logged into platform dashboard" },
     { id: "log-2", timestamp: "2026-07-04T07:30:00Z", userId: "user-manager", userName: "Kamau Njoroge", role: "Facility Manager", action: "Maintenance Update", details: "Updated maintenance task status for Thika Road Commercial Park", propertyId: "prop-2" },
-    { id: "log-3", timestamp: "2026-07-03T16:45:00Z", userId: "user-admin", userName: "Abdulwahab Wandera", role: "Developer", action: "Settings Change", details: "Adjusted safety margin from KSh 15 to KSh 20" },
+    { id: "log-3", timestamp: "2026-07-03T16:45:00Z", userId: "user-admin", userName: "Abdulwahab Wandera", role: "Administrator", action: "Settings Change", details: "Adjusted safety margin from KSh 15 to KSh 20" },
     { id: "log-4", timestamp: "2026-07-03T14:20:00Z", userId: "user-engineer", userName: "Jane Atieno", role: "Maintenance Engineer", action: "Asset Inspection", details: "Completed HVAC motor bearing inspection at Thika Road Commercial Park", propertyId: "prop-2" }
   ]
 };

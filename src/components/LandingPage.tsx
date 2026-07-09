@@ -20,7 +20,7 @@ export default function LandingPage({
     { 
       step: "01",
       title: "Secure Login", 
-      desc: "Authenticate via secure accounts customized for Developers or Facility Managers." 
+      desc: "Authenticate via secure accounts for Administrators, Facility Managers, and Building Owners." 
     },
     { 
       step: "02",
@@ -53,7 +53,7 @@ export default function LandingPage({
     {
       icon: <Lock className="w-6 h-6 text-indigo-500" />,
       title: "Secure Authentication",
-      desc: "Role-based system authorization restricting access to verified project developers and operational facility managers."
+      desc: "Role-based authorization with separate dashboards and permissions for administrators, facility managers, and building owners."
     },
     {
       icon: <FolderOpen className="w-6 h-6 text-blue-500" />,
@@ -68,7 +68,7 @@ export default function LandingPage({
     {
       icon: <Sparkles className="w-6 h-6 text-amber-500" />,
       title: "AI Cost Estimation",
-      desc: "Intelligent neural algorithms that parse floor areas and building designs to produce hyper-accurate material estimations."
+      desc: "AI-assisted estimation that uses regional material pricing and building parameters to produce cost estimates with a built-in safety margin."
     },
     {
       icon: <Database className="w-6 h-6 text-emerald-500" />,
@@ -157,7 +157,7 @@ export default function LandingPage({
             className="text-sm sm:text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto font-light leading-relaxed"
             id="hero-subtitle"
           >
-            An AI-driven decision-support platform designed to mitigate "first-cost bias". 
+            An AI-enhanced decision-support platform designed to mitigate "first-cost bias". 
             Compare capital development expenditure with 30-year operational projections 
             using real material prices.
           </motion.p>
@@ -204,10 +204,10 @@ export default function LandingPage({
           </h3>
           <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-light leading-relaxed max-w-3xl mx-auto">
             Up to <strong>80%</strong> of a building's total cost is incurred during its operational lifetime, 
-            yet developers frequently focus solely on initial capital expenditure (CAPEX). 
+            yet building owners and developers frequently focus solely on initial capital expenditure (CAPEX). 
             The <strong>Building Lifecycle Cost Tracking System (BLCTS)</strong> bridges this gap. 
             By integrating an active construction material price database, architectural plan reference management, and 
-            robust AI calculations, BLCTS exposes long-term maintenance costs and utility consumption anomalies 
+            AI-enhanced analytics, BLCTS exposes long-term maintenance costs and utility consumption anomalies 
             before ground is ever broken.
           </p>
         </div>

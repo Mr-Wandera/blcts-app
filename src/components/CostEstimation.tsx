@@ -399,7 +399,7 @@ export default function CostEstimation({ selectedProperty, triggerToast }: CostE
                   {loadingSteps[loadingStep]}
                 </p>
                 <p className="text-[10px] text-slate-400 font-light max-w-xs leading-normal">
-                  Our neural network is processing specifications and generating localized construction estimates...
+                  Our estimation engine is processing specifications and generating localized construction estimates...
                 </p>
               </div>
               
