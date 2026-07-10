@@ -71,11 +71,11 @@ export default function Sidebar({
   };
 
   const navItems: { tab: ActiveTabType; label: string; icon: any; color: string; badge?: number; adminOnly?: boolean; fmOnly?: boolean; ownerOnly?: boolean; ownerVisible?: boolean }[] = [
-    { tab: "dashboard", label: "Dashboard", icon: Activity, color: "text-emerald-400", ownerVisible: true },
+    { tab: "dashboard", label: "Dashboard", icon: Activity, color: "text-emerald-400" },
     { tab: "admin-dashboard", label: "Admin Dashboard", icon: LayoutDashboard, color: "text-emerald-400", adminOnly: true },
     { tab: "facility-dashboard", label: "Facility Dashboard", icon: LayoutDashboard, color: "text-sky-400", fmOnly: true },
     { tab: "owner-dashboard", label: "Owner Dashboard", icon: Crown, color: "text-amber-400", ownerOnly: true },
-    { tab: "properties-mgmt", label: "Projects", icon: Building, color: "text-emerald-500", badge: properties.filter(p => !p.isSoftDeleted).length, ownerVisible: true },
+    { tab: "properties-mgmt", label: "Projects", icon: Building, color: "text-emerald-500", badge: properties.filter(p => !p.isSoftDeleted).length },
     { tab: "cost-estimation", label: "Cost Estimation", icon: Cpu, color: "text-cyan-400" },
     { tab: "vendors", label: "Vendors & Materials", icon: Users, color: "text-amber-400" },
     { tab: "assets", label: "Asset Management", icon: Boxes, color: "text-blue-400" },

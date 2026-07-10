@@ -16,11 +16,12 @@ const (
 	JWTSecretKey              = "BLCTS_ENTERPRISE_SECURE_TOKEN_SECRET_KEY_2026_MAY_25"
 )
 
-// UserClaims models standard system identities
+// UserClaims models standard system identities for the three BLCTS roles:
+// administrator, facility_manager, building_owner
 type UserClaims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
-	Role   string `json:"role"` // owner, manager, staff
+	Role   string `json:"role"` // administrator, facility_manager, building_owner
 	jwt.RegisteredClaims
 }
 
@@ -29,7 +30,7 @@ func EnsureJWT(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			handlers.SendError(w, http.StatusUnauthorized, "Missing Authorization authorization header credentials", "UNAUTHORIZED")
+			handlers.SendError(w, http.StatusUnauthorized, "Missing Authorization header", "UNAUTHORIZED")
 			return
 		}
 
@@ -43,7 +44,6 @@ func EnsureJWT(next http.Handler) http.Handler {
 		claims := &UserClaims{}
 
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			// Validate signing method matches expectations
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
 			}
@@ -55,19 +55,20 @@ func EnsureJWT(next http.Handler) http.Handler {
 			return
 		}
 
-		// Inject active verified user traits in req Context for downstream handler audits
 		ctx := context.WithValue(r.Context(), UserContextKey, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-// RequireRole guards specific controller paths based on identity permissions
+// RequireRole guards specific controller paths based on identity permissions.
+// Enforces server-side RBAC — client-side hidden buttons are not sufficient.
+// Returns HTTP 403 Forbidden if the user's role is not in the allowed list.
 func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims, ok := r.Context().Value(UserContextKey).(*UserClaims)
 			if !ok {
-				handlers.SendError(w, http.StatusUnauthorized, "User context identity missing in request scope", "UNAUTHORIZED_CONTEXT")
+				handlers.SendError(w, http.StatusUnauthorized, "User context identity missing", "UNAUTHORIZED_CONTEXT")
 				return
 			}
 
@@ -80,7 +81,7 @@ func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
 			}
 
 			if !isAllowed {
-				handlers.SendError(w, http.StatusForbidden, "Privilege Escalation Blocked: insufficient role access permissions", "FORBIDDEN_ESC")
+				handlers.SendError(w, http.StatusForbidden, "Forbidden: insufficient role permissions for this action", "FORBIDDEN")
 				return
 			}
 

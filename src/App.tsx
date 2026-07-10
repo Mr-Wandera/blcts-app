@@ -170,7 +170,7 @@ export default function App() {
   const allowedTabsForRole = React.useMemo((): Set<ActiveTabType> => {
     const all: ActiveTabType[] = ["dashboard", "properties-mgmt", "cost-estimation", "vendors", "assets", "maintenance", "ai-predictions", "sustainability", "compliance", "reports", "notifications"];
     if (!currentUser) return new Set();
-    if (userIsOwner) return new Set(["owner-dashboard", "dashboard", "properties-mgmt", "ai-predictions", "sustainability", "reports", "notifications"]);
+    if (userIsOwner) return new Set(["owner-dashboard", "dashboard", "reports", "notifications", "sustainability", "ai-predictions"]);
     if (userIsFacilityManager) return new Set([...all, "facility-dashboard"]);
     if (userIsAdmin) return new Set([...all, "admin-dashboard", "facility-dashboard", "owner-dashboard", "user-management", "system-settings"]);
     return new Set(all);
