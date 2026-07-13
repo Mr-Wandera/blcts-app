@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, FolderOpen, Users, Wrench, TriangleAlert as AlertTriangle, DollarSign, MapPin, FileText, Settings, ChevronRight, CircleCheck as CheckCircle2, Circle, Clock, TrendingUp, Building2, ClipboardList, ChartBar as BarChart3, ShieldCheck, ArrowRight, Activity } from 'lucide-react';
-import { User, Project } from '../types';
+import { User, Project, MaintenanceTask } from '../types';
+import { fetchTasks } from '../lib/supabase';
 import { fmtKSh } from '../lib/format';
 import { Badge } from './ui/Badge';
 import { StepBar } from './ui/StepBar';
@@ -414,11 +415,21 @@ const MAINTENANCE_WORKFLOW_STEPS = [
 ];
 
 function FacilityManagerDashboard({ user, projects, onNavigate }: Props) {
-  // In a real app, tasks would be fetched; using mock counts for dashboard
-  const totalTasks = 0;
-  const pending = 0;
-  const inProgress = 0;
-  const completed = 0;
+  const [tasks, setTasks] = useState<MaintenanceTask[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
+
+  useEffect(() => {
+    setTasksLoading(true);
+    fetchTasks()
+      .then(setTasks)
+      .catch(() => setTasks([]))
+      .finally(() => setTasksLoading(false));
+  }, []);
+
+  const totalTasks = tasks.length;
+  const pending = tasks.filter(t => t.status === 'Pending').length;
+  const inProgress = tasks.filter(t => t.status === 'In-Progress').length;
+  const completed = tasks.filter(t => t.status === 'Completed' || t.status === 'Verified').length;
 
   const workflowSteps = MAINTENANCE_WORKFLOW_STEPS.map((label, i) => ({
     label,
@@ -439,10 +450,10 @@ function FacilityManagerDashboard({ user, projects, onNavigate }: Props) {
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Total Tasks" value={totalTasks} icon={<ClipboardList className="w-5 h-5" />} color="blue" sub="All time" />
-        <KpiCard label="Pending" value={pending} icon={<Clock className="w-5 h-5" />} color="amber" sub="Awaiting assignment" />
-        <KpiCard label="In Progress" value={inProgress} icon={<Activity className="w-5 h-5" />} color="blue" sub="Active work orders" />
-        <KpiCard label="Completed" value={completed} icon={<CheckCircle2 className="w-5 h-5" />} color="green" sub="Verified & closed" />
+        <KpiCard label="Total Tasks" value={tasksLoading ? '…' : totalTasks} icon={<ClipboardList className="w-5 h-5" />} color="blue" sub="All time" />
+        <KpiCard label="Pending" value={tasksLoading ? '…' : pending} icon={<Clock className="w-5 h-5" />} color="amber" sub="Awaiting assignment" />
+        <KpiCard label="In Progress" value={tasksLoading ? '…' : inProgress} icon={<Activity className="w-5 h-5" />} color="blue" sub="Active work orders" />
+        <KpiCard label="Completed" value={tasksLoading ? '…' : completed} icon={<CheckCircle2 className="w-5 h-5" />} color="green" sub="Verified & closed" />
       </div>
 
       {/* Maintenance Workflow */}

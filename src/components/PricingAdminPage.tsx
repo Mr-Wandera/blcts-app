@@ -7,6 +7,7 @@ import { Badge } from './ui/Badge';
 
 interface Props {
   onBack: () => void;
+  initialTab?: 'materials' | 'regional';
 }
 
 type PriceCategory = 'material' | 'labour' | 'service';
@@ -250,12 +251,13 @@ function MultiplierBadge({ value }: { value: number }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export default function PricingAdminPage({ onBack }: Props) {
+export default function PricingAdminPage({ onBack, initialTab }: Props) {
   const [materials, setMaterials] = useState<MaterialRow[]>([]);
   const [pricing, setPricing] = useState<RegionalPricingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<PriceCategory>('material');
+  const [mainTab, setMainTab] = useState<'materials' | 'regional'>(initialTab ?? 'materials');
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -314,7 +316,7 @@ export default function PricingAdminPage({ onBack }: Props) {
             <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             <span className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">Admin</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Material & Labour Price Database</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Pricing Administration</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
             Prices stored in Supabase. Changes affect future BOQ estimates immediately.
             Click the <Pencil className="inline w-3 h-3 mx-0.5 align-middle" /> icon on any row to edit inline.
@@ -329,6 +331,34 @@ export default function PricingAdminPage({ onBack }: Props) {
           {refreshing ? 'Refreshing…' : 'Refresh Prices'}
         </button>
       </div>
+
+      {/* Main Tab Switch */}
+      {!loading && !error && (
+        <div className="flex gap-2">
+          <button
+            onClick={() => setMainTab('materials')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${
+              mainTab === 'materials'
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            Material &amp; Labour Prices
+          </button>
+          <button
+            onClick={() => setMainTab('regional')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${
+              mainTab === 'regional'
+                ? 'bg-emerald-600 text-white border-emerald-600'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+            }`}
+          >
+            <MapPin className="w-4 h-4" />
+            Regional Pricing
+          </button>
+        </div>
+      )}
 
       {/* Error state */}
       {error && (
@@ -346,7 +376,8 @@ export default function PricingAdminPage({ onBack }: Props) {
         </div>
       ) : (
         <>
-          {/* Category Tabs + Table */}
+          {/* Category Tabs + Table — shown when mainTab = materials */}
+          {mainTab === 'materials' && (
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 overflow-hidden">
             {/* Tab bar */}
             <div className="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80">
@@ -392,9 +423,10 @@ export default function PricingAdminPage({ onBack }: Props) {
               <p className="text-xs text-slate-400">Last refreshed: {new Date().toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
           </div>
+          )}
 
-          {/* Regional Pricing Panel */}
-          <RegionalPanel rows={pricing} />
+          {/* Regional Pricing Panel — shown when mainTab = regional */}
+          {mainTab === 'regional' && <RegionalPanel rows={pricing} />}
         </>
       )}
 

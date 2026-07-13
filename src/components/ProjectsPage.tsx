@@ -117,11 +117,11 @@ export default function ProjectsPage({
     }`;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      {/* Header */}
+    <div className="min-h-full bg-white dark:bg-transparent p-0">
+        {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-slate-800">My Projects</h1>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">My Projects</h1>
           <span className="inline-flex items-center justify-center rounded-full bg-slate-200 text-slate-700 text-sm font-semibold px-3 py-0.5 min-w-[2rem]">
             {projects.length}
           </span>
@@ -155,12 +155,12 @@ export default function ProjectsPage({
           {projects.map((project) => (
             <div
               key={project.id}
-              className="bg-white rounded-xl shadow border border-slate-200 hover:shadow-md transition-shadow overflow-hidden"
+              className="bg-white dark:bg-slate-800/60 rounded-xl shadow border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow overflow-hidden"
             >
               {/* Top section */}
               <div className="px-5 pt-5 pb-3">
                 <div className="flex items-start justify-between gap-2 mb-1">
-                  <h3 className="font-bold text-slate-800 text-base leading-snug">
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base leading-snug">
                     {project.name}
                   </h3>
                 </div>
