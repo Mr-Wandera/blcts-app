@@ -124,7 +124,7 @@ interface MaterialsTableProps {
 function MaterialsTable({ rows, onPriceUpdate }: MaterialsTableProps) {
   if (rows.length === 0) {
     return (
-      <div className="py-16 text-center text-slate-400 dark:text-slate-500">
+      <div className="py-16 text-center text-slate-400 dark:text-slate-500 dark:text-slate-400">
         <Package className="w-10 h-10 mx-auto mb-3 opacity-40" />
         <p className="text-sm">No items in this category</p>
       </div>
@@ -145,7 +145,7 @@ function MaterialsTable({ rows, onPriceUpdate }: MaterialsTableProps) {
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
           {rows.map((row) => (
-            <tr key={row.id} className="group hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+            <tr key={row.id} className="group hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-slate-700/20 transition-colors">
               <td className="py-3 px-4">
                 <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{row.name}</span>
                 {row.notes && (
@@ -206,7 +206,7 @@ function RegionalPanel({ rows }: { rows: RegionalPricingRow[] }) {
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
             {rows.map((row) => (
-              <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+              <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-slate-700/20 transition-colors">
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
@@ -325,7 +325,7 @@ export default function PricingAdminPage({ onBack, initialTab }: Props) {
         <button
           onClick={() => load(true)}
           disabled={refreshing}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-60"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 dark:border-white/12 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-slate-700 transition-colors disabled:opacity-60"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           {refreshing ? 'Refreshing…' : 'Refresh Prices'}
@@ -340,7 +340,7 @@ export default function PricingAdminPage({ onBack, initialTab }: Props) {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${
               mainTab === 'materials'
                 ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-slate-700'
             }`}
           >
             <Package className="w-4 h-4" />
@@ -351,7 +351,7 @@ export default function PricingAdminPage({ onBack, initialTab }: Props) {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${
               mainTab === 'regional'
                 ? 'bg-emerald-600 text-white border-emerald-600'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-slate-700'
             }`}
           >
             <MapPin className="w-4 h-4" />

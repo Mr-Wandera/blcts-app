@@ -303,7 +303,7 @@ function UserManagementPage() {
           { label: 'Active Now', value: DEMO_USERS.length, color: 'text-emerald-600 dark:text-emerald-400' },
           { label: 'Roles Defined', value: 3, color: 'text-violet-600 dark:text-violet-400' },
         ].map(s => (
-          <div key={s.label} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 p-4 text-center">
+          <div key={s.label} className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] p-4 text-center">
             <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{s.label}</p>
           </div>
@@ -311,13 +311,13 @@ function UserManagementPage() {
       </div>
 
       {/* User Table */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+      <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/6">
           <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">System Accounts</h2>
         </div>
-        <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
+        <div className="divide-y divide-slate-100 dark:divide-white/6">
           {DEMO_USERS.map(u => (
-            <div key={u.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+            <div key={u.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-white/3 transition-colors">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold text-sm flex items-center justify-center flex-shrink-0">
                 {u.name.charAt(0)}
               </div>
@@ -337,8 +337,8 @@ function UserManagementPage() {
       </div>
 
       {/* Role Permissions */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+      <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/6">
           <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Role Permissions Matrix</h2>
         </div>
         <div className="p-5 overflow-x-auto">
@@ -377,7 +377,7 @@ function UserManagementPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/50 dark:bg-blue-950/20 p-4">
+      <div className="rounded-2xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/50 dark:bg-blue-950/20 p-4">
         <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
           Demo accounts: admin@blcts.ke, owner@blcts.ke, fm@blcts.ke
         </p>
@@ -410,7 +410,7 @@ function SystemSettingsPage() {
       {/* Health Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {systemItems.map(item => (
-          <div key={item.label} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 p-4 flex items-center justify-between gap-3">
+          <div key={item.label} className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] p-4 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{item.label}</p>
               <p className="text-sm font-medium text-slate-800 dark:text-slate-100 mt-0.5 truncate">{item.value}</p>
@@ -425,8 +425,8 @@ function SystemSettingsPage() {
       </div>
 
       {/* Platform Info */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+      <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/6">
           <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Platform Information</h2>
         </div>
         <div className="p-5 space-y-3">
@@ -449,11 +449,11 @@ function SystemSettingsPage() {
       </div>
 
       {/* Audit Log */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+      <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/6">
           <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Recent Audit Events</h2>
         </div>
-        <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
+        <div className="divide-y divide-slate-100 dark:divide-white/6">
           {[
             { time: new Date().toLocaleString(), action: 'Session started', user: 'Administrator', type: 'auth' },
             { time: new Date(Date.now() - 3600000).toLocaleString(), action: 'Material price database viewed', user: 'Administrator', type: 'data' },

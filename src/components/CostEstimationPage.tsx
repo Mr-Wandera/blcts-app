@@ -198,22 +198,18 @@ export default function CostEstimationPage({ project, onGoToBlueprint, onProject
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="space-y-6 animate-fade-in">
       {/* ── Workflow StepBar ── */}
-      <div className="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto">
-          <StepBar steps={buildWorkflowSteps()} compact={true} />
-        </div>
+      <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 shadow-sm p-4">
+        <StepBar steps={buildWorkflowSteps()} compact={true} />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-
         {/* ── Project Banner ── */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 shadow-sm p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-xl font-bold text-slate-800">{project.name}</h1>
-              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-sm text-slate-500">
+              <h1 className="text-xl font-bold text-slate-800 dark:text-white">{project.name}</h1>
+              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-sm text-slate-500 dark:text-slate-400">
                 <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{project.location}</span>
                 <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" />{project.county}</span>
                 <span className="flex items-center gap-1"><Layers className="w-3.5 h-3.5" />GFA: {gfa.toLocaleString()} m²</span>
@@ -234,7 +230,7 @@ export default function CostEstimationPage({ project, onGoToBlueprint, onProject
         {project.blueprintAnalysis ? (
           <BlueprintAnalysisBanner analysis={project.blueprintAnalysis} />
         ) : (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between gap-4">
+          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
               <div>
@@ -281,7 +277,6 @@ export default function CostEstimationPage({ project, onGoToBlueprint, onProject
 
         {/* ── History ── */}
         <HistorySection history={history} loading={historyLoading} />
-      </div>
     </div>
   );
 }
@@ -385,10 +380,10 @@ function ParametersPanel(p: ParamPanelProps) {
   const labelCls = 'block text-xs font-semibold text-slate-600 mb-1';
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+    <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 shadow-sm p-5">
       <div className="flex items-center gap-2 mb-4">
         <Calculator className="w-5 h-5 text-blue-600" />
-        <h2 className="text-base font-bold text-slate-800">Estimation Parameters</h2>
+        <h2 className="text-base font-bold text-slate-800 dark:text-white">Estimation Parameters</h2>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
@@ -418,11 +413,11 @@ function ParametersPanel(p: ParamPanelProps) {
       </div>
 
       {/* GFA Section */}
-      <div className="bg-slate-50 rounded-lg p-4 mb-4 border border-slate-200">
+      <div className="bg-slate-50 dark:bg-white/4 rounded-xl p-4 mb-4 border border-slate-200 dark:border-white/8">
         <div className="flex items-center justify-between mb-3">
           <div>
             <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Gross Floor Area</p>
-            <p className="text-2xl font-bold text-slate-800 mt-0.5">
+            <p className="text-2xl font-bold text-slate-800 dark:text-white mt-0.5">
               {p.gfa.toLocaleString()} <span className="text-sm font-normal text-slate-500">m²</span>
             </p>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -520,17 +515,17 @@ function ResultsSection({ estimate, activeTab, setActiveTab, project, onExportCS
   ];
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 shadow-sm overflow-hidden">
       {/* Tab bar */}
-      <div className="border-b border-slate-200 flex overflow-x-auto">
+      <div className="border-b border-slate-200 dark:border-white/8 flex overflow-x-auto bg-slate-50 dark:bg-white/3">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
             className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
               activeTab === t.key
-                ? 'border-blue-600 text-blue-700 bg-blue-50/50'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/10'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/4'
             }`}
           >
             {t.icon}
@@ -539,7 +534,7 @@ function ResultsSection({ estimate, activeTab, setActiveTab, project, onExportCS
         ))}
       </div>
 
-      <div className="p-6">
+      <div className="p-5">
         {activeTab === 'summary' && <SummaryTab estimate={estimate} />}
         {activeTab === 'boq' && <BOQTab estimate={estimate} onExportCSV={onExportCSV} />}
         {activeTab === 'lifecycle' && <LifecycleTab estimate={estimate} />}
@@ -836,7 +831,7 @@ function LifecycleTab({ estimate }: { estimate: BOQEstimate }) {
                   <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-slate-100 dark:text-white/6" />
               <XAxis dataKey="year" tick={{ fontSize: 10 }} interval={4} />
               <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}M`} />
               <Tooltip
@@ -855,7 +850,7 @@ function LifecycleTab({ estimate }: { estimate: BOQEstimate }) {
         <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 h-56">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-slate-100 dark:text-white/6" />
               <XAxis dataKey="year" tick={{ fontSize: 10 }} interval={4} />
               <YAxis tick={{ fontSize: 10 }} />
               <Tooltip
@@ -1036,7 +1031,7 @@ function HistorySection({ history, loading }: { history: BOQEstimate[]; loading:
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 shadow-sm overflow-hidden">
       <button
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors"
