@@ -379,8 +379,7 @@ function UserManagementPage() {
 
       <div className="rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/50 dark:bg-blue-950/20 p-4">
         <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-          Demo Mode: Users log in via the login screen. Each role has a different dashboard and feature set.
-          Use the demo accounts: admin@blcts.ke, owner@blcts.ke, fm@blcts.ke
+          Demo accounts: admin@blcts.ke, owner@blcts.ke, fm@blcts.ke
         </p>
       </div>
     </div>
