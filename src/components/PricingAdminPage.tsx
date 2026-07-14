@@ -7,6 +7,7 @@ import { Badge } from './ui/Badge';
 
 interface Props {
   onBack: () => void;
+  initialTab?: 'materials' | 'regional';
 }
 
 type PriceCategory = 'material' | 'labour' | 'service';
@@ -75,13 +76,13 @@ function EditCell({ id, currentPrice, onSave }: EditCellProps) {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKey}
-            className="w-32 pl-9 pr-2 py-1.5 rounded-lg border-2 border-blue-500 bg-white dark:bg-slate-800 text-sm font-medium text-slate-800 dark:text-slate-100 focus:outline-none tabular-nums"
+            className="w-32 pl-9 pr-2 py-1.5 rounded-lg border-2 border-emerald-500 bg-white dark:bg-[#0f1629] text-sm font-medium text-slate-800 dark:text-slate-100 focus:outline-none tabular-nums"
           />
         </div>
         <button
           onClick={save}
           disabled={saving}
-          className="p-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors disabled:opacity-60"
+          className="p-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50 shadow-sm shadow-emerald-600/20"
           title="Save (Enter)"
         >
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
@@ -104,7 +105,7 @@ function EditCell({ id, currentPrice, onSave }: EditCellProps) {
       </span>
       <button
         onClick={startEdit}
-        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-950/30 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
+        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-950/30 text-slate-400 hover:text-emerald-600 dark:hover:text-blue-400 transition-all"
         title="Edit price"
       >
         <Pencil className="w-3.5 h-3.5" />
@@ -123,7 +124,7 @@ interface MaterialsTableProps {
 function MaterialsTable({ rows, onPriceUpdate }: MaterialsTableProps) {
   if (rows.length === 0) {
     return (
-      <div className="py-16 text-center text-slate-400 dark:text-slate-500">
+      <div className="py-16 text-center text-slate-400 dark:text-slate-500 dark:text-slate-400">
         <Package className="w-10 h-10 mx-auto mb-3 opacity-40" />
         <p className="text-sm">No items in this category</p>
       </div>
@@ -134,7 +135,7 @@ function MaterialsTable({ rows, onPriceUpdate }: MaterialsTableProps) {
     <div className="overflow-x-auto">
       <table className="w-full min-w-[600px]">
         <thead>
-          <tr className="border-b border-slate-200 dark:border-slate-700">
+          <tr className="border-b border-slate-200 dark:border-white/8">
             <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Item</th>
             <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Code</th>
             <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Unit</th>
@@ -144,7 +145,7 @@ function MaterialsTable({ rows, onPriceUpdate }: MaterialsTableProps) {
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
           {rows.map((row) => (
-            <tr key={row.id} className="group hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+            <tr key={row.id} className="group hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/3 transition-colors">
               <td className="py-3 px-4">
                 <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{row.name}</span>
                 {row.notes && (
@@ -152,7 +153,7 @@ function MaterialsTable({ rows, onPriceUpdate }: MaterialsTableProps) {
                 )}
               </td>
               <td className="py-3 px-4">
-                <span className="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{row.item_id}</span>
+                <span className="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-[#0f1629] px-1.5 py-0.5 rounded">{row.item_id}</span>
               </td>
               <td className="py-3 px-4">
                 <span className="text-xs text-slate-600 dark:text-slate-300">{row.unit}</span>
@@ -181,8 +182,8 @@ function RegionalPanel({ rows }: { rows: RegionalPricingRow[] }) {
   if (rows.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
+    <div className="rounded-xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
+      <div className="px-5 py-4 border-b border-slate-100 dark:border-white/8 flex items-center gap-2">
         <MapPin className="w-4 h-4 text-slate-500 dark:text-slate-400" />
         <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Regional Pricing Reference</h2>
         <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-400">
@@ -193,7 +194,7 @@ function RegionalPanel({ rows }: { rows: RegionalPricingRow[] }) {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[900px]">
           <thead>
-            <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80">
+            <tr className="border-b border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-[#0f1629]/80">
               <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">County</th>
               <th className="text-right py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Material ×</th>
               <th className="text-right py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Labour ×</th>
@@ -205,7 +206,7 @@ function RegionalPanel({ rows }: { rows: RegionalPricingRow[] }) {
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
             {rows.map((row) => (
-              <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+              <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/3 transition-colors">
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
@@ -250,12 +251,13 @@ function MultiplierBadge({ value }: { value: number }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export default function PricingAdminPage({ onBack }: Props) {
+export default function PricingAdminPage({ onBack, initialTab }: Props) {
   const [materials, setMaterials] = useState<MaterialRow[]>([]);
   const [pricing, setPricing] = useState<RegionalPricingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<PriceCategory>('material');
+  const [mainTab, setMainTab] = useState<'materials' | 'regional'>(initialTab ?? 'materials');
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -311,10 +313,10 @@ export default function PricingAdminPage({ onBack }: Props) {
             Back
           </button>
           <div className="flex items-center gap-2 mb-1">
-            <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <span className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">Admin</span>
+            <DollarSign className="w-5 h-5 text-emerald-600 dark:text-blue-400" />
+            <span className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-blue-400">Admin</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Material & Labour Price Database</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Pricing Administration</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
             Prices stored in Supabase. Changes affect future BOQ estimates immediately.
             Click the <Pencil className="inline w-3 h-3 mx-0.5 align-middle" /> icon on any row to edit inline.
@@ -323,12 +325,40 @@ export default function PricingAdminPage({ onBack }: Props) {
         <button
           onClick={() => load(true)}
           disabled={refreshing}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-60"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/6 transition-colors disabled:opacity-60"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           {refreshing ? 'Refreshing…' : 'Refresh Prices'}
         </button>
       </div>
+
+      {/* Main Tab Switch */}
+      {!loading && !error && (
+        <div className="flex gap-2">
+          <button
+            onClick={() => setMainTab('materials')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${
+              mainTab === 'materials'
+                ? 'bg-emerald-600 text-white border-emerald-600'
+                : 'bg-white dark:bg-[#0f1629] text-slate-600 dark:text-slate-300 border-slate-300 dark:border-white/12 hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/6'
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            Material &amp; Labour Prices
+          </button>
+          <button
+            onClick={() => setMainTab('regional')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${
+              mainTab === 'regional'
+                ? 'bg-emerald-600 text-white border-emerald-600'
+                : 'bg-white dark:bg-[#0f1629] text-slate-600 dark:text-slate-300 border-slate-300 dark:border-white/12 hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/6'
+            }`}
+          >
+            <MapPin className="w-4 h-4" />
+            Regional Pricing
+          </button>
+        </div>
+      )}
 
       {/* Error state */}
       {error && (
@@ -346,17 +376,18 @@ export default function PricingAdminPage({ onBack }: Props) {
         </div>
       ) : (
         <>
-          {/* Category Tabs + Table */}
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 overflow-hidden">
+          {/* Category Tabs + Table — shown when mainTab = materials */}
+          {mainTab === 'materials' && (
+          <div className="rounded-xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
             {/* Tab bar */}
-            <div className="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80">
+            <div className="flex border-b border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-[#0f1629]/80">
               {CATEGORY_TABS.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-colors border-b-2 ${
                     activeTab === tab.key
-                      ? 'border-blue-600 text-blue-700 dark:text-blue-400 bg-white dark:bg-slate-800'
+                      ? 'border-emerald-600 text-emerald-700 dark:text-blue-400 bg-white dark:bg-[#0f1629]'
                       : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                   }`}
                 >
@@ -364,7 +395,7 @@ export default function PricingAdminPage({ onBack }: Props) {
                   {tab.label}
                   <span className={`ml-1 text-xs rounded-full px-1.5 py-0.5 font-semibold ${
                     activeTab === tab.key
-                      ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400'
+                      ? 'bg-blue-100 dark:bg-blue-900/40 text-emerald-700 dark:text-blue-400'
                       : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                   }`}>
                     {countByCategory(tab.key)}
@@ -374,9 +405,9 @@ export default function PricingAdminPage({ onBack }: Props) {
             </div>
 
             {/* Instruction hint */}
-            <div className="px-4 py-2.5 bg-blue-50/50 dark:bg-blue-950/10 border-b border-blue-100 dark:border-blue-900/30 flex items-center gap-2">
+            <div className="px-4 py-2.5 bg-emerald-50/50 dark:bg-emerald-950/10 dark:bg-blue-950/10 border-b border-blue-100 dark:border-blue-900/30 flex items-center gap-2">
               <Info className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
-              <p className="text-xs text-blue-700 dark:text-blue-400">
+              <p className="text-xs text-emerald-700 dark:text-blue-400">
                 Hover over a row, then click <Pencil className="inline w-3 h-3 mx-0.5 align-middle" /> to edit. Press <kbd className="bg-blue-100 dark:bg-blue-900 px-1 rounded text-[10px]">Enter</kbd> to save or <kbd className="bg-blue-100 dark:bg-blue-900 px-1 rounded text-[10px]">Esc</kbd> to cancel.
               </p>
             </div>
@@ -385,16 +416,17 @@ export default function PricingAdminPage({ onBack }: Props) {
             <MaterialsTable rows={tabRows} onPriceUpdate={handlePriceUpdate} />
 
             {/* Footer */}
-            <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
+            <div className="px-4 py-3 border-t border-slate-100 dark:border-white/8 bg-slate-50 dark:bg-[#0f1629] flex items-center justify-between">
               <p className="text-xs text-slate-400">
                 {tabRows.length} {activeTab} item{tabRows.length !== 1 ? 's' : ''} · Prices in KSh per unit
               </p>
               <p className="text-xs text-slate-400">Last refreshed: {new Date().toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
           </div>
+          )}
 
-          {/* Regional Pricing Panel */}
-          <RegionalPanel rows={pricing} />
+          {/* Regional Pricing Panel — shown when mainTab = regional */}
+          {mainTab === 'regional' && <RegionalPanel rows={pricing} />}
         </>
       )}
 

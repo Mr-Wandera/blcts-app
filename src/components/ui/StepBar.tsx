@@ -34,12 +34,12 @@ export function StepBar({ steps, compact = false }: Props) {
                   <div className="relative flex items-center justify-center w-7 h-7">
                     {/* Pulsing ring */}
                     <span className="absolute inset-0 rounded-full bg-blue-400/30 animate-ping" />
-                    <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white shadow-sm shadow-blue-200 dark:shadow-blue-900/40">
+                    <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-emerald-600 text-white shadow-sm shadow-blue-200 dark:shadow-blue-900/40">
                       <Circle className="w-3 h-3 fill-white" strokeWidth={0} />
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
+                  <div className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-500 border border-slate-200 dark:bg-[#0f1629] dark:text-slate-400 dark:border-white/8">
                     <span className={`${compact ? 'text-[10px]' : 'text-xs'} font-semibold leading-none`}>
                       {index + 1}
                     </span>
@@ -55,7 +55,7 @@ export function StepBar({ steps, compact = false }: Props) {
                       step.status === 'completed'
                         ? 'text-emerald-600 dark:text-emerald-400'
                         : step.status === 'active'
-                        ? 'text-blue-600 dark:text-blue-400'
+                        ? 'text-emerald-600 dark:text-blue-400'
                         : 'text-slate-400 dark:text-slate-500'
                     }
                   `}
@@ -72,7 +72,7 @@ export function StepBar({ steps, compact = false }: Props) {
                       ? 'text-slate-300 dark:text-slate-600'
                       : step.status === 'completed'
                       ? 'text-emerald-400 dark:text-emerald-600'
-                      : 'text-blue-300 dark:text-blue-700'
+                      : 'text-blue-300 dark:text-emerald-700'
                   }`}
                   strokeWidth={2}
                 />
@@ -84,7 +84,7 @@ export function StepBar({ steps, compact = false }: Props) {
 
       {/* Progress bar + percentage */}
       <div className="mt-2 flex items-center gap-2">
-        <div className="flex-1 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+        <div className="flex-1 h-1.5 rounded-full bg-slate-100 dark:bg-[#0f1629] overflow-hidden">
           <div
             className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all duration-500 ease-out"
             style={{ width: `${progressPct}%` }}

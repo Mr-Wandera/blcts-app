@@ -43,11 +43,11 @@ const CATEGORY_OPTIONS: MaintenanceCategory[] = [
 const PRIORITY_OPTIONS: MaintenancePriority[] = ['Low', 'Medium', 'High', 'Critical'];
 
 const inputCls =
-  'w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 ' +
-  'px-3 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 ' +
-  'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition';
+  'w-full rounded-xl border border-slate-200 dark:border-white/12 bg-slate-50 dark:bg-white/4 ' +
+  'px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 ' +
+  'focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition disabled:opacity-50 disabled:cursor-not-allowed';
 
-const labelCls = 'block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1';
+const labelCls = 'block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5';
 
 // ─── Badge helpers ────────────────────────────────────────────────────────────
 
@@ -148,10 +148,10 @@ function CreateModal({ open, onClose, onSave, saving }: CreateModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 dark:bg-black/70" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm dark:bg-black/70" onClick={onClose} />
+      <div className="relative w-full max-w-2xl bg-white dark:bg-[#0f1629] rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/8">
           <div className="flex items-center gap-2">
             <Wrench className="w-5 h-5 text-amber-500" />
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Create Maintenance Task</h2>
@@ -271,18 +271,18 @@ function CreateModal({ open, onClose, onSave, saving }: CreateModalProps) {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-[#0f1629]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/6 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-white transition-colors disabled:opacity-60"
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-white transition-colors disabled:opacity-60"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               {saving ? 'Creating…' : 'Create Task'}
@@ -317,18 +317,18 @@ function StatusDropdown({ current, onChange }: StatusDropdownProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+        className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-blue-400 transition-colors"
       >
         <Badge label={current} color={statusColor(current)} />
         <ChevronDown className="w-3 h-3 opacity-60" />
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-30 w-36 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl overflow-hidden">
+        <div className="absolute top-full left-0 mt-1 z-30 w-36 rounded-lg border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] shadow-xl overflow-hidden">
           {STATUS_OPTIONS.map((s) => (
             <button
               key={s}
               onClick={() => { onChange(s); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${s === current ? 'font-bold text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}
+              className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/6 transition-colors ${s === current ? 'font-bold text-emerald-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}
             >
               {s}
             </button>
@@ -350,12 +350,12 @@ interface TaskCardProps {
 
 function TaskCard({ task, onStatusChange, onDelete, onEdit }: TaskCardProps) {
   return (
-    <div className="bg-white dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:shadow-md transition-shadow group">
+    <div className="bg-white dark:bg-[#0f1629] rounded-xl border border-slate-200 dark:border-white/8 p-4 hover:shadow-md transition-shadow group">
       {/* Top row */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">{task.workOrderNumber}</span>
+            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 dark:text-slate-400">{task.workOrderNumber}</span>
             <Badge label={task.priority} color={priorityColor(task.priority)} />
           </div>
           <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-sm leading-snug">{task.title}</h3>
@@ -364,7 +364,7 @@ function TaskCard({ task, onStatusChange, onDelete, onEdit }: TaskCardProps) {
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
           <button
             onClick={() => onEdit(task)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors"
             title="Edit task"
           >
             <Edit3 className="w-3.5 h-3.5" />
@@ -409,7 +409,7 @@ function TaskCard({ task, onStatusChange, onDelete, onEdit }: TaskCardProps) {
       </div>
 
       {/* Status control */}
-      <div className="pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+      <div className="pt-3 border-t border-slate-100 dark:border-white/8 flex items-center justify-between">
         <StatusDropdown current={task.status} onChange={(s) => onStatusChange(task.id, s)} />
         <span className="text-[10px] text-slate-400">{fmtDate(task.updatedAt ?? task.createdAt ?? '')}</span>
       </div>
@@ -560,7 +560,7 @@ export default function MaintenancePage({ projectId, projectName, currentUser }:
         <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
-            className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+            className="w-full rounded-lg border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
             placeholder="Search tasks…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -573,7 +573,7 @@ export default function MaintenancePage({ projectId, projectName, currentUser }:
 
         {/* Status filter */}
         <select
-          className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          className="rounded-lg border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as MaintenanceStatus | 'All')}
         >
@@ -583,7 +583,7 @@ export default function MaintenancePage({ projectId, projectName, currentUser }:
 
         {/* Category filter */}
         <select
-          className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          className="rounded-lg border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value as MaintenanceCategory | 'All')}
         >
@@ -593,7 +593,7 @@ export default function MaintenancePage({ projectId, projectName, currentUser }:
 
         {/* Priority filter */}
         <select
-          className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+          className="rounded-lg border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value as MaintenancePriority | 'All')}
         >
@@ -615,7 +615,7 @@ export default function MaintenancePage({ projectId, projectName, currentUser }:
         </div>
       ) : tasks.length === 0 ? (
         // Empty state
-        <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/40 px-8 py-16 text-center">
+        <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] px-8 py-16 text-center">
           <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
             <Wrench className="w-8 h-8 text-amber-500" />
           </div>
@@ -633,12 +633,12 @@ export default function MaintenancePage({ projectId, projectName, currentUser }:
           </button>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-8 py-12 text-center">
+        <div className="rounded-xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] px-8 py-12 text-center">
           <AlertTriangle className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400">No tasks match your filters.</p>
           <button
             onClick={() => { setSearch(''); setFilterStatus('All'); setFilterCategory('All'); setFilterPriority('All'); }}
-            className="mt-3 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+            className="mt-3 text-xs font-semibold text-emerald-600 dark:text-blue-400 hover:underline"
           >
             Clear all filters
           </button>
@@ -682,8 +682,8 @@ export default function MaintenancePage({ projectId, projectName, currentUser }:
               onClick={() => setFilterStatus(s === filterStatus ? 'All' : s)}
               className={`rounded-xl border p-3 text-center transition-all ${
                 filterStatus === s
-                  ? 'border-blue-400 dark:border-blue-600 bg-blue-50 dark:bg-blue-950/30'
-                  : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-600'
+                  ? 'border-blue-400 dark:border-emerald-600 bg-blue-50 dark:bg-blue-950/30'
+                  : 'border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] hover:border-slate-300 dark:hover:border-slate-600'
               }`}
             >
               <p className="text-xl font-bold text-slate-800 dark:text-slate-100 tabular-nums">{stepCounts[s] ?? 0}</p>

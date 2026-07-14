@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Upload, FileCheck, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle2, ChevronRight, X, ArrowLeft, Loader as Loader2, Eye } from 'lucide-react';
+import { Upload, FileCheck, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle2, X, ArrowLeft, Loader as Loader2, Eye, FileText, Cpu, Layers, ChevronRight, Info, Building2, MapPin, RotateCcw, Pencil } from 'lucide-react';
 import { analyzeBlueprint } from '../lib/gemini';
 import { StepBar } from './ui/StepBar';
 import type { Project, BlueprintAnalysisResult, BuildingType, ConstructionStandard } from '../types';
@@ -19,14 +19,8 @@ interface Props {
 
 type Stage = 'idle' | 'file-selected' | 'analyzing' | 'complete' | 'error' | 'manual';
 
-const KENYA_COUNTIES = [
-  'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret',
-  'Busia', 'Thika', 'Meru', 'Nyeri', 'Machakos',
-];
-const BUILDING_TYPES = [
-  'Residential', 'Maisonette', 'Apartment', 'Commercial', 'Office',
-  'Mixed-Use', 'Warehouse', 'School', 'Hospital', 'Industrial',
-];
+const KENYA_COUNTIES = ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Busia', 'Thika', 'Meru', 'Nyeri', 'Machakos'];
+const BUILDING_TYPES = ['Residential', 'Maisonette', 'Apartment', 'Commercial', 'Office', 'Mixed-Use', 'Warehouse', 'School', 'Hospital', 'Industrial'];
 const STANDARDS = ['Economy', 'Standard', 'Premium', 'Luxury'];
 
 const STEP_LABELS = [
@@ -42,46 +36,22 @@ function formatFileSize(bytes: number): string {
 }
 
 function buildStepStatuses(stage: Stage, analysisStep: number): Array<'completed' | 'active' | 'pending'> {
-  const total = STEP_LABELS.length; // 15
-
-  if (stage === 'idle') {
-    return STEP_LABELS.map((_, i) => (i === 0 ? 'active' : 'pending'));
-  }
-
-  if (stage === 'file-selected') {
-    return STEP_LABELS.map((_, i) => {
-      if (i <= 1) return 'completed';
-      if (i === 2) return 'active';
-      return 'pending';
-    });
-  }
-
+  if (stage === 'idle') return STEP_LABELS.map((_, i) => (i === 0 ? 'active' : 'pending'));
+  if (stage === 'file-selected') return STEP_LABELS.map((_, i) => i <= 1 ? 'completed' : i === 2 ? 'active' : 'pending');
   if (stage === 'analyzing') {
-    const capped = Math.min(analysisStep, 13);
     return STEP_LABELS.map((_, i) => {
-      if (i < capped) return 'completed';
-      if (i === capped) return 'active';
+      if (i < analysisStep) return 'completed';
+      if (i === analysisStep) return 'active';
       return 'pending';
     });
   }
-
-  if (stage === 'complete') {
-    return STEP_LABELS.map(() => 'completed');
-  }
-
-  if (stage === 'error') {
-    const capped = Math.min(analysisStep, 13);
-    return STEP_LABELS.map((_, i) => {
-      if (i < capped) return 'completed';
-      if (i === capped) return 'active';
-      return 'pending';
-    });
-  }
-
-  if (stage === 'manual') {
-    return STEP_LABELS.map((_, i) => (i === 0 ? 'completed' : 'pending'));
-  }
-
+  if (stage === 'complete') return STEP_LABELS.map(() => 'completed');
+  if (stage === 'error') return STEP_LABELS.map((_, i) => {
+    if (i < analysisStep) return 'completed';
+    if (i === analysisStep) return 'active';
+    return 'pending';
+  });
+  if (stage === 'manual') return STEP_LABELS.map((_, i) => (i === 0 ? 'completed' : 'pending'));
   return STEP_LABELS.map(() => 'pending');
 }
 
@@ -95,6 +65,9 @@ function getCurrentStepLabel(stage: Stage, analysisStep: number): string {
   return STEP_LABELS[0];
 }
 
+const inputCls = 'w-full rounded-xl border border-slate-200 dark:border-white/12 bg-slate-50 dark:bg-white/4 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition';
+const labelCls = 'block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5';
+
 export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
   const [stage, setStage] = useState<Stage>('idle');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -104,7 +77,6 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
   const [validationError, setValidationError] = useState('');
   const [analysisStep, setAnalysisStep] = useState(0);
 
-  // Manual / confirmed form fields
   const [manualFloorArea, setManualFloorArea] = useState(String(project.floorAreaPerFloor ?? ''));
   const [manualFloors, setManualFloors] = useState(String(project.floors ?? ''));
   const [manualBuildingType, setManualBuildingType] = useState<string>(project.buildingType ?? 'Residential');
@@ -113,130 +85,81 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── File validation & selection ──────────────────────────────────────────
-
   const ALLOWED_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
   const ALLOWED_EXTS = ['.pdf', '.png', '.jpg', '.jpeg'];
-  const MAX_SIZE = 15 * 1024 * 1024; // 15 MB
+  const MAX_SIZE = 15 * 1024 * 1024;
 
-  const validateAndSetFile = useCallback((file: File) => {
+  const validateFile = (file: File): string | null => {
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
     if (!ALLOWED_TYPES.includes(file.type) && !ALLOWED_EXTS.includes(ext)) {
-      setValidationError('Invalid file type. Please upload a PDF, PNG, JPG, or JPEG.');
-      return;
+      return 'Unsupported file type. Upload a PDF, PNG, or JPEG.';
     }
-    if (file.size > MAX_SIZE) {
-      setValidationError('File exceeds the 15 MB limit. Please upload a smaller file.');
-      return;
-    }
+    if (file.size > MAX_SIZE) return `File too large (${formatFileSize(file.size)}). Maximum size is 15 MB.`;
+    return null;
+  };
+
+  const handleFileSelect = useCallback((file: File) => {
+    const err = validateFile(file);
+    if (err) { setValidationError(err); return; }
     setValidationError('');
     setSelectedFile(file);
+    setAnalysisResult(null);
+    setErrorMsg('');
     setStage('file-selected');
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback(() => {
-    setDragOver(false);
-  }, []);
-
+  const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setDragOver(true); }, []);
+  const handleDragLeave = useCallback(() => setDragOver(false), []);
   const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) validateAndSetFile(file);
-  }, [validateAndSetFile]);
-
-  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) validateAndSetFile(file);
-  }, [validateAndSetFile]);
-
-  const handleClearFile = useCallback(() => {
-    setSelectedFile(null);
-    setStage('idle');
-    setValidationError('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  }, []);
-
-  // ── Analysis ─────────────────────────────────────────────────────────────
-
-  const readFileAsBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        // Strip the data URL prefix
-        const base64 = result.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsDataURL(file);
-    });
+    e.preventDefault(); setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  }, [handleFileSelect]);
 
   const handleAnalyze = useCallback(async () => {
     if (!selectedFile) return;
-
     setStage('analyzing');
     setAnalysisStep(0);
     setErrorMsg('');
-
-    // Animate steps 0→3 while reading / before AI call
-    let currentStep = 0;
-    const preInterval = setInterval(() => {
-      currentStep += 1;
-      if (currentStep <= 3) {
-        setAnalysisStep(currentStep);
-      } else {
-        clearInterval(preInterval);
-      }
-    }, 600);
-
     try {
-      const base64data = await readFileAsBase64(selectedFile);
+      const reader = new FileReader();
+      const base64data = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1] ?? '');
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedFile);
+      });
 
-      // Ensure we've shown at least step 3 before proceeding
-      clearInterval(preInterval);
-      setAnalysisStep(3);
+      let preStep = 0;
+      await new Promise<void>((resolve) => {
+        const preInterval = setInterval(() => {
+          preStep += 1;
+          setAnalysisStep(preStep);
+          if (preStep >= 3) { clearInterval(preInterval); resolve(); }
+        }, 300);
+      });
 
       const result = await analyzeBlueprint(base64data, selectedFile.type, selectedFile.name);
-
-      // Animate steps 4→13 quickly
       let postStep = 4;
       await new Promise<void>((resolve) => {
         const postInterval = setInterval(() => {
           setAnalysisStep(postStep);
           postStep += 1;
-          if (postStep > 13) {
-            clearInterval(postInterval);
-            resolve();
-          }
+          if (postStep > 13) { clearInterval(postInterval); resolve(); }
         }, 100);
       });
 
       setAnalysisResult(result);
       setStage('complete');
-
-      // Pre-fill form from analysis result
-      setManualFloorArea(
-        result.estimatedFloorArea != null
-          ? String(result.estimatedFloorArea)
-          : String(project.floorAreaPerFloor ?? '')
-      );
-      setManualFloors(
-        result.floors != null
-          ? String(result.floors)
-          : String(project.floors ?? '')
-      );
+      setManualFloorArea(result.estimatedFloorArea != null ? String(result.estimatedFloorArea) : String(project.floorAreaPerFloor ?? ''));
+      setManualFloors(result.floors != null ? String(result.floors) : String(project.floors ?? ''));
       setManualBuildingType(result.buildingType ?? project.buildingType ?? 'Residential');
       setManualStandard(project.constructionStandard ?? 'Standard');
       setManualCounty(project.county ?? 'Nairobi');
-    } catch (err: any) {
-      clearInterval(preInterval);
-      setErrorMsg(err?.message ?? 'An unexpected error occurred during analysis.');
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'An unexpected error occurred during analysis.');
       setStage('error');
     }
   }, [selectedFile, project]);
@@ -250,370 +173,369 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
     setStage('manual');
   }, [project]);
 
-  // ── Confirm ──────────────────────────────────────────────────────────────
-
   const handleConfirm = useCallback(() => {
-    if (!manualFloorArea || Number(manualFloorArea) <= 0) {
-      alert('Please enter a valid floor area per floor.');
-      return;
-    }
-    if (!manualFloors || Number(manualFloors) <= 0) {
-      alert('Please enter a valid number of floors.');
-      return;
-    }
-
-    const fallbackResult: BlueprintAnalysisResult = {
-      estimatedFloorArea: null,
-      floors: null,
-      buildingType: null,
-      confidence: null,
-      observations: [],
-      isFallback: true,
-    };
-
+    const fa = parseFloat(manualFloorArea);
+    const fl = parseInt(manualFloors, 10);
+    if (!fa || fa <= 0 || !fl || fl <= 0) return;
     onConfirm({
-      floorAreaPerFloor: Number(manualFloorArea),
-      floors: Number(manualFloors),
+      floorAreaPerFloor: fa,
+      floors: fl,
       buildingType: manualBuildingType,
       constructionStandard: manualStandard,
       county: manualCounty,
-      blueprintAnalysis: analysisResult ?? fallbackResult,
+      blueprintAnalysis: analysisResult ?? {
+        estimatedFloorArea: fa,
+        floors: fl,
+        buildingType: manualBuildingType,
+        confidence: null,
+        observations: ['Parameters entered manually — no AI analysis performed.'],
+        isFallback: true,
+      },
     });
   }, [manualFloorArea, manualFloors, manualBuildingType, manualStandard, manualCounty, analysisResult, onConfirm]);
 
-  // ── Derived ──────────────────────────────────────────────────────────────
-
   const stepStatuses = buildStepStatuses(stage, analysisStep);
   const currentStepLabel = getCurrentStepLabel(stage, analysisStep);
-
   const showUploadZone = stage === 'idle' || stage === 'file-selected';
   const showAnalyzeButton = stage === 'file-selected';
   const showLoading = stage === 'analyzing';
-  const showResults = stage === 'complete' || stage === 'error';
-  const showManualForm = stage === 'complete' || stage === 'manual' || stage === 'error';
+  const showResults = stage === 'complete' || stage === 'manual';
+  const showError = stage === 'error';
 
-  const isFallback = analysisResult?.isFallback ?? false;
-  const confidence = analysisResult?.confidence ?? null;
-
-  const confidenceColor =
-    confidence == null ? 'bg-slate-400'
-    : confidence > 0.8 ? 'bg-green-500'
-    : confidence > 0.6 ? 'bg-amber-500'
-    : 'bg-red-500';
-
+  const confidence = analysisResult?.confidence ?? 0;
+  const confidenceColor = confidence > 0.8 ? 'text-emerald-500' : confidence > 0.6 ? 'text-amber-500' : 'text-rose-500';
+  const confidenceBg = confidence > 0.8 ? 'bg-emerald-500' : confidence > 0.6 ? 'bg-amber-500' : 'bg-rose-500';
   const progressPct = Math.round((analysisStep / 14) * 100);
 
-  // ── Render ───────────────────────────────────────────────────────────────
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Top bar */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-center gap-4">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
-          <div className="h-5 w-px bg-slate-200" />
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <button onClick={onBack}
+          className="flex items-center gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <div className="h-5 w-px bg-slate-200 dark:bg-white/12" />
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center">
+            <Layers className="w-4 h-4 text-emerald-600 dark:text-blue-400" />
+          </div>
           <div>
-            <h1 className="text-lg font-semibold text-slate-900">Blueprint Analysis</h1>
-            <p className="text-xs text-slate-500">{project.name}</p>
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">Blueprint Analysis</h1>
+            <p className="text-xs text-slate-400 dark:text-slate-500">{project.name} · {project.county}</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-6">
-        {/* StepBar */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-6">
-          <StepBar steps={STEP_LABELS.map((label, i) => ({ label, status: stepStatuses[i] }))} compact={true} />
-          <p className="text-xs text-slate-500 mt-2 text-center font-medium tracking-wide uppercase">
-            {currentStepLabel}
-          </p>
-        </div>
+      {/* Step progress */}
+      <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 p-4 shadow-sm">
+        <StepBar steps={STEP_LABELS.map((label, i) => ({ label, status: stepStatuses[i] }))} compact={true} />
+        <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-2.5 text-center uppercase tracking-widest">
+          {currentStepLabel}
+        </p>
+      </div>
 
-        <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto space-y-5">
 
-          {/* ── Upload Zone ───────────────────────────────────────────────── */}
-          {showUploadZone && (
-            <div className="mb-6">
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all select-none
-                  ${dragOver
-                    ? 'border-blue-400 bg-blue-50'
-                    : 'border-slate-300 hover:border-blue-400 hover:bg-blue-50/50'
-                  }`}
-              >
-                <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                <p className="text-base font-semibold text-slate-700 mb-1">
-                  Drag &amp; drop your blueprint here
-                </p>
-                <p className="text-sm text-slate-500 mb-3">or click to browse files</p>
-                <p className="text-xs text-slate-400">Supported: PDF, PNG, JPG · Max 15 MB</p>
-              </div>
+        {/* ── Upload Zone ──────────────────────────────────────────────── */}
+        {showUploadZone && (
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg"
+              className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
+            />
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onKeyDown={e => e.key === 'Enter' && fileInputRef.current?.click()}
+              className={`relative overflow-hidden rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-200 ${
+                dragOver
+                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 scale-[1.01]'
+                  : stage === 'file-selected'
+                  ? 'border-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/10'
+                  : 'border-slate-300 dark:border-white/12 bg-white dark:bg-[#0f1629] hover:border-emerald-400 dark:hover:border-emerald-700/60 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/10'
+              }`}
+            >
+              {/* Background grid pattern */}
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
 
-              {/* Selected file indicator */}
-              {selectedFile && (
-                <div className="mt-3 flex items-center gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-                  <FileCheck className="w-5 h-5 text-green-600 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-green-800 truncate">{selectedFile.name}</p>
-                    <p className="text-xs text-green-600">{formatFileSize(selectedFile.size)}</p>
+              <div className="relative flex flex-col items-center justify-center p-12 text-center">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all ${
+                  stage === 'file-selected' ? 'bg-emerald-100 dark:bg-emerald-950/40' : 'bg-slate-100 dark:bg-white/6'
+                }`}>
+                  {stage === 'file-selected'
+                    ? <FileCheck className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                    : <Upload className="w-8 h-8 text-slate-500 dark:text-slate-400" />
+                  }
+                </div>
+
+                {stage === 'file-selected' && selectedFile ? (
+                  <div>
+                    <p className="text-base font-bold text-emerald-700 dark:text-emerald-400 mb-1">{selectedFile.name}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{formatFileSize(selectedFile.size)} · Click to change</p>
+                    <div className="flex items-center justify-center gap-1.5 mt-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">File validated — ready to analyse</span>
+                    </div>
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleClearFile(); }}
-                    className="p-1 rounded-full hover:bg-green-100 text-green-600 transition-colors"
-                    aria-label="Remove file"
-                  >
-                    <X className="w-4 h-4" />
+                ) : (
+                  <div>
+                    <p className="text-base font-semibold text-slate-700 dark:text-slate-200 mb-1">
+                      {dragOver ? 'Drop your blueprint here' : 'Drag & drop or click to upload'}
+                    </p>
+                    <p className="text-sm text-slate-400 dark:text-slate-500 mb-3">
+                      Architectural PDF, PNG, or JPEG · Maximum 15 MB
+                    </p>
+                    <div className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded-xl transition shadow-md shadow-emerald-600/20">
+                      <Upload className="w-4 h-4" /> Choose File
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {validationError && (
+              <div className="mt-3 flex items-start gap-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/50 rounded-xl px-4 py-3">
+                <AlertTriangle className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-rose-700 dark:text-rose-400">{validationError}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Analyze Button ────────────────────────────────────────────── */}
+        {showAnalyzeButton && (
+          <div className="flex flex-col gap-3">
+            <button onClick={handleAnalyze}
+              className="w-full flex items-center justify-center gap-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-6 rounded-2xl text-base transition-all shadow-lg shadow-emerald-600/25 hover:-translate-y-px">
+              <Cpu className="w-5 h-5" />
+              Analyse with AI (Gemini 2.5 Flash)
+            </button>
+            <button onClick={handleSkipToManual}
+              className="w-full flex items-center justify-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 py-2.5 rounded-xl border border-dashed border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 transition">
+              <Pencil className="w-3.5 h-3.5" /> Skip AI — Enter Parameters Manually
+            </button>
+          </div>
+        )}
+
+        {/* ── Loading State ─────────────────────────────────────────────── */}
+        {showLoading && (
+          <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 p-10 flex flex-col items-center gap-5 shadow-sm">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-2xl bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center">
+                <Cpu className="w-10 h-10 text-emerald-600 dark:text-blue-400" />
+              </div>
+              <div className="absolute inset-0 rounded-2xl border-4 border-emerald-500/30 animate-ping" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{currentStepLabel}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Gemini AI is analysing your blueprint…</p>
+            </div>
+            <div className="w-full max-w-sm">
+              <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+                <span>Analysis progress</span>
+                <span className="font-bold tabular-nums">{progressPct}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-slate-100 dark:bg-white/8 overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-300" style={{ width: `${progressPct}%` }} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Error State ───────────────────────────────────────────────── */}
+        {showError && (
+          <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/50 rounded-2xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-rose-800 dark:text-rose-300 mb-1">Analysis Failed</h3>
+                <p className="text-sm text-rose-700 dark:text-rose-400 mb-4">{errorMsg || 'An unexpected error occurred.'}</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setStage('file-selected')}
+                    className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
+                    <RotateCcw className="w-3.5 h-3.5" /> Retry
+                  </button>
+                  <button onClick={handleSkipToManual}
+                    className="flex items-center gap-2 border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-400 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-950/30 transition">
+                    <Pencil className="w-3.5 h-3.5" /> Enter Manually
                   </button>
                 </div>
-              )}
-
-              {/* Validation error */}
-              {validationError && (
-                <div className="mt-2 flex items-center gap-2 text-red-600 text-sm">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span>{validationError}</span>
-                </div>
-              )}
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
-                className="hidden"
-                onChange={handleFileInputChange}
-              />
-            </div>
-          )}
-
-          {/* ── Analyze Button ────────────────────────────────────────────── */}
-          {showAnalyzeButton && (
-            <div className="mb-6 flex flex-col items-center gap-3">
-              <button
-                onClick={handleAnalyze}
-                className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold py-3.5 px-6 rounded-xl text-base transition-colors shadow-sm"
-              >
-                <Eye className="w-5 h-5" />
-                Analyze Blueprint
-              </button>
-              <button
-                onClick={handleSkipToManual}
-                className="text-sm text-slate-500 hover:text-slate-700 underline underline-offset-2 transition-colors"
-              >
-                Skip AI / Enter Manually
-              </button>
-            </div>
-          )}
-
-          {/* ── Loading State ─────────────────────────────────────────────── */}
-          {showLoading && (
-            <div className="mb-6 bg-white rounded-xl border border-slate-200 shadow-sm p-8 flex flex-col items-center gap-4">
-              <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-              <p className="text-base font-semibold text-slate-700">{currentStepLabel}</p>
-              <p className="text-sm text-slate-500">Running AI analysis on your blueprint…</p>
-              <div className="w-full max-w-xs bg-slate-100 rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progressPct}%` }}
-                />
               </div>
-              <p className="text-xs text-slate-400">{progressPct}% complete</p>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ── Results Panel ─────────────────────────────────────────────── */}
-          {showResults && (
-            <div className="mb-6 space-y-4">
-              {/* Error / Fallback banner */}
-              {(stage === 'error' || isFallback) && (
-                <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <p className="text-sm text-amber-800">
-                    {stage === 'error'
-                      ? errorMsg
-                      : 'AI analysis unavailable — the blueprint could not be parsed. Enter values manually below.'}
-                  </p>
-                </div>
-              )}
-
-              {/* Success banner */}
-              {stage === 'complete' && !isFallback && (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-                    <p className="text-sm font-semibold text-green-700">
-                      Blueprint analyzed successfully
-                      {confidence != null && (
-                        <span className="ml-2 font-normal text-slate-600">
-                          — {Math.round(confidence * 100)}% confidence
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  {confidence != null && (
-                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-500 ${confidenceColor}`}
-                        style={{ width: `${Math.round(confidence * 100)}%` }}
-                      />
+        {/* ── Results & Confirmation ────────────────────────────────────── */}
+        {showResults && (
+          <div className="space-y-5">
+            {/* AI Observations */}
+            {analysisResult && !analysisResult.isFallback && (
+              <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 overflow-hidden shadow-sm">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/6">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-950/40 flex items-center justify-center">
+                      <Cpu className="w-3.5 h-3.5 text-emerald-600 dark:text-blue-400" />
                     </div>
-                  )}
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-100">AI Analysis Results</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 dark:text-slate-500">Confidence</span>
+                    <span className={`text-sm font-black tabular-nums ${confidenceColor}`}>
+                      {analysisResult.confidence != null ? `${Math.round(analysisResult.confidence * 100)}%` : 'N/A'}
+                    </span>
+                    <div className="w-16 h-1.5 rounded-full bg-slate-100 dark:bg-white/8 overflow-hidden">
+                      <div className={`h-full rounded-full ${confidenceBg} transition-all duration-500`}
+                        style={{ width: `${(analysisResult.confidence ?? 0) * 100}%` }} />
+                    </div>
+                  </div>
                 </div>
-              )}
 
-              {/* Observations */}
-              {analysisResult && analysisResult.observations.length > 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-3">AI Observations</h3>
-                  <ul className="space-y-1.5">
-                    {analysisResult.observations.map((obs, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-slate-600">
-                        <ChevronRight className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                        {obs}
-                      </li>
-                    ))}
-                  </ul>
+                {/* Extracted data grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-100 dark:bg-white/6">
+                  {[
+                    { label: 'Floor Area', value: analysisResult.estimatedFloorArea != null ? `${analysisResult.estimatedFloorArea} m²/floor` : 'Not determined' },
+                    { label: 'Floors', value: analysisResult.floors != null ? String(analysisResult.floors) : 'Not determined' },
+                    { label: 'Building Type', value: analysisResult.buildingType ?? 'Not determined' },
+                    { label: 'Drawing Scale', value: analysisResult.drawingScale ?? 'Not detected' },
+                  ].map(d => (
+                    <div key={d.label} className="bg-white dark:bg-[#0f1629] px-4 py-3">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">{d.label}</p>
+                      <p className={`text-sm font-bold mt-0.5 ${d.value === 'Not determined' || d.value === 'Not detected' ? 'text-slate-400 dark:text-slate-500 italic' : 'text-slate-800 dark:text-slate-100'}`}>
+                        {d.value}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              )}
 
-              {/* Extracted values card */}
-              {stage === 'complete' && !isFallback && analysisResult && (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-4">Extracted Values</h3>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                    {[
-                      { label: 'Floor Area', value: analysisResult.estimatedFloorArea != null ? `${analysisResult.estimatedFloorArea} m²` : null },
-                      { label: 'Floors', value: analysisResult.floors != null ? String(analysisResult.floors) : null },
-                      { label: 'Building Type', value: analysisResult.buildingType },
-                      { label: 'Roof Type', value: analysisResult.roofType ?? null },
-                      { label: 'Rooms', value: analysisResult.roomCount != null ? String(analysisResult.roomCount) : null },
-                      { label: 'Bedrooms', value: analysisResult.bedrooms != null ? String(analysisResult.bedrooms) : null },
-                      { label: 'Bathrooms', value: analysisResult.bathrooms != null ? String(analysisResult.bathrooms) : null },
-                      { label: 'Scale', value: analysisResult.drawingScale ?? null },
-                    ].map(({ label, value }) => (
-                      <div key={label}>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-0.5">{label}</p>
-                        <p className={`text-sm ${value ? 'text-slate-800 font-medium' : 'text-slate-400 italic'}`}>
-                          {value ?? 'Unable to determine from uploaded drawing.'}
-                        </p>
+                {/* Observations */}
+                {analysisResult.observations.length > 0 && (
+                  <div className="p-4 space-y-2">
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">AI Observations</p>
+                    {analysisResult.observations.map((obs, i) => (
+                      <div key={i} className="flex items-start gap-2.5 text-sm">
+                        <Info className="w-3.5 h-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-slate-600 dark:text-slate-400">{obs}</span>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
 
-          {/* ── Manual / Confirm Form ─────────────────────────────────────── */}
-          {showManualForm && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
-              <h2 className="text-base font-semibold text-slate-800 mb-5">
-                {stage === 'manual' ? 'Enter Parameters Manually' : 'Confirm Parameters'}
-              </h2>
+                {analysisResult.isFallback && (
+                  <div className="mx-4 mb-4 flex items-start gap-2.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-xl px-3.5 py-3">
+                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-amber-700 dark:text-amber-400">AI extraction unavailable. Please confirm parameters manually below.</p>
+                  </div>
+                )}
+              </div>
+            )}
 
-              <div className="space-y-4">
-                {/* Floor Area */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Floor Area Per Floor (m²)
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={manualFloorArea}
-                    onChange={(e) => setManualFloorArea(e.target.value)}
-                    placeholder="e.g. 150"
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  />
-                </div>
+            {/* Manual fallback notice */}
+            {stage === 'manual' && (
+              <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl px-4 py-3.5">
+                <Pencil className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-emerald-700 dark:text-blue-400">
+                  Manual entry mode. The parameters below will be used for cost estimation.
+                </p>
+              </div>
+            )}
 
-                {/* Number of Floors */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Number of Floors
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={manualFloors}
-                    onChange={(e) => setManualFloors(e.target.value)}
-                    placeholder="e.g. 2"
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  />
+            {/* Confirmation form */}
+            <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 overflow-hidden shadow-sm">
+              <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-100 dark:border-white/6">
+                <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 </div>
-
-                {/* Building Type */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Building Type
-                  </label>
-                  <select
-                    value={manualBuildingType}
-                    onChange={(e) => setManualBuildingType(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
-                  >
-                    {BUILDING_TYPES.map((bt) => (
-                      <option key={bt} value={bt}>{bt}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Construction Standard */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Construction Standard
-                  </label>
-                  <select
-                    value={manualStandard}
-                    onChange={(e) => setManualStandard(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
-                  >
-                    {STANDARDS.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* County */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    County
-                  </label>
-                  <select
-                    value={manualCounty}
-                    onChange={(e) => setManualCounty(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
-                  >
-                    {KENYA_COUNTIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
+                <span className="text-sm font-bold text-slate-800 dark:text-slate-100">Confirm Parameters for Cost Estimation</span>
               </div>
 
-              {/* Confirm button */}
-              <button
-                onClick={handleConfirm}
-                className="mt-6 w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold py-3.5 px-6 rounded-xl text-base transition-colors shadow-sm"
-              >
-                Confirm &amp; Calculate Estimate
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          )}
+              <div className="p-5 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelCls}>Floor Area per Floor (m²) *</label>
+                    <input type="number" min="1" value={manualFloorArea}
+                      onChange={e => setManualFloorArea(e.target.value)}
+                      className={inputCls} placeholder="e.g. 250" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Number of Floors *</label>
+                    <input type="number" min="1" value={manualFloors}
+                      onChange={e => setManualFloors(e.target.value)}
+                      className={inputCls} placeholder="e.g. 3" />
+                  </div>
+                </div>
 
-        </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelCls}>Building Type</label>
+                    <select value={manualBuildingType} onChange={e => setManualBuildingType(e.target.value)} className={inputCls}>
+                      {BUILDING_TYPES.map(t => <option key={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Construction Standard</label>
+                    <select value={manualStandard} onChange={e => setManualStandard(e.target.value)} className={inputCls}>
+                      {STANDARDS.map(s => <option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelCls}>County</label>
+                  <select value={manualCounty} onChange={e => setManualCounty(e.target.value)} className={inputCls}>
+                    {KENYA_COUNTIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+
+                {/* GFA summary */}
+                {manualFloorArea && manualFloors && (
+                  <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl px-4 py-3">
+                    <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                        Total GFA: <strong>{(parseFloat(manualFloorArea) * parseInt(manualFloors)).toLocaleString()} m²</strong>
+                        {' '}· {manualBuildingType} · {manualStandard} · {manualCounty}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleConfirm}
+                  disabled={!manualFloorArea || !manualFloors || parseFloat(manualFloorArea) <= 0}
+                  className="w-full flex items-center justify-center gap-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/40 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl text-base transition-all shadow-lg shadow-emerald-600/20 hover:-translate-y-px"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                  Proceed to Cost Estimation
+                </button>
+              </div>
+            </div>
+
+            {/* File info strip */}
+            {selectedFile && (
+              <div className="flex items-center gap-3 bg-slate-50 dark:bg-white/4 border border-slate-200 dark:border-white/8 rounded-xl px-4 py-3">
+                <FileText className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                <p className="text-xs text-slate-500 dark:text-slate-400 flex-1 truncate">
+                  <span className="font-medium text-slate-700 dark:text-slate-300">{selectedFile.name}</span>
+                  {' · '}{formatFileSize(selectedFile.size)}
+                </p>
+                <button onClick={() => { setStage('idle'); setSelectedFile(null); setAnalysisResult(null); }}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/10 transition">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

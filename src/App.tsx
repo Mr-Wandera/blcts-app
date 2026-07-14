@@ -30,9 +30,7 @@ const TAB_TITLES: Record<Tab, string> = {
 };
 
 function App() {
-  const [showLanding, setShowLanding] = useState(() => {
-    return !localStorage.getItem('blcts_user');
-  });
+  const [showLanding, setShowLanding] = useState(() => !localStorage.getItem('blcts_user'));
   const [user, setUser] = useState<User | null>(() => {
     try { return JSON.parse(localStorage.getItem('blcts_user') || 'null'); } catch { return null; }
   });
@@ -68,10 +66,6 @@ function App() {
 
   function handleTabChange(tab: string) {
     setActiveTab(tab as Tab);
-  }
-
-  function handleSelectProject(projectId: string) {
-    setSelectedProjectId(projectId);
   }
 
   function handleUploadBlueprint(projectId: string) {
@@ -110,8 +104,10 @@ function App() {
     setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
   }
 
+  // Always pick the explicitly selected project first, fallback to first project
   const selectedProject = projects.find(p => p.id === selectedProjectId) ?? projects[0] ?? null;
 
+  // ── Landing page ───────────────────────────────────────────────────────────
   if (showLanding) {
     return (
       <LandingPageNew
@@ -123,13 +119,56 @@ function App() {
     );
   }
 
+  // ── Auth screen ────────────────────────────────────────────────────────────
   if (!user) {
+    return <AuthScreen onLogin={handleLogin} />;
+  }
+
+  // ── Enforce role-based tab access ──────────────────────────────────────────
+  const ADMIN_ONLY_TABS: Tab[] = ['users', 'prices', 'regions', 'system'];
+  const OWNER_ONLY_TABS: Tab[] = ['blueprint', 'estimation'];
+  const FM_ONLY_TABS: Tab[] = ['maintenance'];
+
+  function canAccessTab(tab: Tab): boolean {
+    if (ADMIN_ONLY_TABS.includes(tab) && user!.role !== 'Administrator') return false;
+    if (OWNER_ONLY_TABS.includes(tab) && user!.role !== 'Building Owner') return false;
+    if (FM_ONLY_TABS.includes(tab) && user!.role !== 'Facility Manager') return false;
+    return true;
+  }
+
+  // ── No-project fallback ────────────────────────────────────────────────────
+  function NoProjectSelected({ tab }: { tab: string }) {
     return (
-      <AuthScreen onLogin={handleLogin} />
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-[#0f1629] flex items-center justify-center mb-4">
+          <span className="text-3xl">🏗️</span>
+        </div>
+        <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">No project selected</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-xs">
+          {projects.length === 0
+            ? 'Create your first project to access ' + tab + '.'
+            : 'Select a project from the Projects page to continue.'}
+        </p>
+        <button
+          onClick={() => setActiveTab('projects')}
+          className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition shadow-sm"
+        >
+          {projects.length === 0 ? 'Create a Project' : 'Go to Projects'}
+        </button>
+      </div>
     );
   }
 
   function renderContent() {
+    // Block unauthorized tab access
+    if (!canAccessTab(activeTab)) {
+      return (
+        <div className="p-8 text-center">
+          <p className="text-slate-500 dark:text-slate-400">You do not have access to this section.</p>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'dashboard':
         return (
@@ -146,7 +185,7 @@ function App() {
             projects={projects}
             currentUser={user!}
             onProjectsChange={setProjects}
-            onSelectProject={handleSelectProject}
+            onSelectProject={setSelectedProjectId}
             onUploadBlueprint={handleUploadBlueprint}
             onViewEstimate={handleViewEstimate}
           />
@@ -159,11 +198,7 @@ function App() {
             onConfirm={handleBlueprintConfirm}
             onBack={() => setActiveTab('projects')}
           />
-        ) : (
-          <div className="p-8 text-center text-slate-500">
-            <p>No project selected. <button className="text-emerald-600 hover:underline cursor-pointer font-medium" onClick={() => setActiveTab('projects')}>Go to Projects</button></p>
-          </div>
-        );
+        ) : <NoProjectSelected tab="Blueprint Analysis" />;
 
       case 'estimation':
         return selectedProject ? (
@@ -172,11 +207,7 @@ function App() {
             onGoToBlueprint={() => setActiveTab('blueprint')}
             onProjectUpdate={handleProjectUpdate}
           />
-        ) : (
-          <div className="p-8 text-center text-slate-500">
-            <p>No project selected. <button className="text-emerald-600 hover:underline cursor-pointer font-medium" onClick={() => setActiveTab('projects')}>Go to Projects</button></p>
-          </div>
-        );
+        ) : <NoProjectSelected tab="Cost Estimation" />;
 
       case 'maintenance':
         return selectedProject ? (
@@ -185,15 +216,17 @@ function App() {
             projectName={selectedProject.name}
             currentUser={user!}
           />
-        ) : (
-          <div className="p-8 text-center">
-            <p className="text-slate-500 mb-4">Select a project to manage maintenance.</p>
-            <button onClick={() => setActiveTab('projects')} className="bg-emerald-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl cursor-pointer">Go to Projects</button>
-          </div>
-        );
+        ) : <NoProjectSelected tab="Maintenance Management" />;
 
+      // Both prices and regions render PricingAdminPage (it has both tabs internally)
       case 'prices':
-        return <PricingAdminPage onBack={() => setActiveTab('dashboard')} />;
+      case 'regions':
+        return (
+          <PricingAdminPage
+            onBack={() => setActiveTab('dashboard')}
+            initialTab={activeTab === 'regions' ? 'regional' : 'materials'}
+          />
+        );
 
       case 'reports':
         return selectedProject ? (
@@ -201,17 +234,13 @@ function App() {
             project={selectedProject}
             onGoToEstimation={() => setActiveTab('estimation')}
           />
-        ) : (
-          <div className="p-8 text-center text-slate-500">
-            <p>No project selected. <button className="text-emerald-600 hover:underline cursor-pointer font-medium" onClick={() => setActiveTab('projects')}>Go to Projects</button></p>
-          </div>
-        );
+        ) : <NoProjectSelected tab="Reports" />;
 
       case 'users':
-        return <UserManagementSimple />;
+        return <UserManagementPage />;
 
       case 'system':
-        return <SystemSettingsSimple />;
+        return <SystemSettingsPage />;
 
       default:
         return null;
@@ -235,77 +264,210 @@ function App() {
   );
 }
 
-// Simple inline User Management for Administrator
-function UserManagementSimple() {
+// ─── User Management Page ─────────────────────────────────────────────────────
+
+function UserManagementPage() {
   const DEMO_USERS = [
-    { id: 'demo-admin-001', name: 'Admin User', email: 'admin@blcts.ke', role: 'Administrator', organization: 'BLCTS HQ' },
-    { id: 'demo-owner-001', name: 'James Kariuki', email: 'owner@blcts.ke', role: 'Building Owner', organization: 'Nairobi Properties Ltd' },
-    { id: 'demo-fm-001', name: 'Grace Wanjiku', email: 'fm@blcts.ke', role: 'Facility Manager', organization: 'FM Services Kenya' },
+    { id: 'demo-admin-001', name: 'Admin User', email: 'admin@blcts.ke', role: 'Administrator', organization: 'BLCTS HQ', status: 'Active' },
+    { id: 'demo-owner-001', name: 'James Kariuki', email: 'owner@blcts.ke', role: 'Building Owner', organization: 'Nairobi Properties Ltd', status: 'Active' },
+    { id: 'demo-fm-001', name: 'Grace Wanjiku', email: 'fm@blcts.ke', role: 'Facility Manager', organization: 'FM Services Kenya', status: 'Active' },
   ];
+
+  const roleColors: Record<string, string> = {
+    Administrator: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-900/40',
+    'Building Owner': 'bg-blue-50 text-emerald-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/40',
+    'Facility Manager': 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/40',
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">User Management</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage system users and their role-based access permissions.</p>
+      {/* Header */}
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">User Management</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage system users and role-based access permissions.</p>
+        </div>
+        <button
+          disabled
+          className="inline-flex items-center gap-2 bg-emerald-600/50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl cursor-not-allowed opacity-60"
+          title="User creation is managed by the administrator"
+        >
+          + Invite User
+        </button>
       </div>
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Total Users', value: DEMO_USERS.length, color: 'text-emerald-600 dark:text-blue-400' },
+          { label: 'Active Now', value: DEMO_USERS.length, color: 'text-emerald-600 dark:text-emerald-400' },
+          { label: 'Roles Defined', value: 3, color: 'text-violet-600 dark:text-violet-400' },
+        ].map(s => (
+          <div key={s.label} className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] p-4 text-center">
+            <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* User Table */}
+      <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/6">
           <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">System Accounts</h2>
         </div>
-        <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
+        <div className="divide-y divide-slate-100 dark:divide-white/6">
           {DEMO_USERS.map(u => (
-            <div key={u.id} className="flex items-center gap-4 px-5 py-4">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold text-sm flex items-center justify-center flex-shrink-0">
+            <div key={u.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-white/3 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold text-sm flex items-center justify-center flex-shrink-0">
                 {u.name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{u.name}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{u.email} · {u.organization}</p>
               </div>
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
-                u.role === 'Administrator' ? 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-900/40' :
-                u.role === 'Building Owner' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/40' :
-                'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/40'
-              }`}>{u.role}</span>
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${roleColors[u.role]}`}>
+                {u.role}
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                {u.status}
+              </span>
             </div>
           ))}
         </div>
       </div>
-      <div className="rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/50 dark:bg-blue-950/20 p-4">
-        <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Demo Mode: Use the login screen to switch between Administrator, Building Owner, and Facility Manager roles. Each role has different dashboard views and capabilities.</p>
+
+      {/* Role Permissions */}
+      <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/6">
+          <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Role Permissions Matrix</h2>
+        </div>
+        <div className="p-5 overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-white/8">
+                <th className="text-left pb-2 text-slate-500 dark:text-slate-400 font-medium">Permission</th>
+                <th className="text-center pb-2 text-violet-600 dark:text-violet-400 font-semibold">Admin</th>
+                <th className="text-center pb-2 text-emerald-600 dark:text-blue-400 font-semibold">Owner</th>
+                <th className="text-center pb-2 text-emerald-600 dark:text-emerald-400 font-semibold">FM</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ['Manage Users', true, false, false],
+                ['Configure Material Prices', true, false, false],
+                ['Set Regional Pricing', true, false, false],
+                ['System Settings', true, false, false],
+                ['Create Projects', true, true, false],
+                ['Upload Blueprints', false, true, false],
+                ['Run Cost Estimation', false, true, false],
+                ['View BOQ & Reports', true, true, true],
+                ['Create Maintenance Tasks', false, false, true],
+                ['Manage Work Orders', false, false, true],
+                ['Record Actual Costs', false, false, true],
+              ].map(([label, admin, owner, fm]) => (
+                <tr key={String(label)} className="border-b border-slate-100 dark:border-white/6 last:border-0">
+                  <td className="py-2 text-slate-700 dark:text-slate-300">{String(label)}</td>
+                  <td className="py-2 text-center">{admin ? '✅' : '—'}</td>
+                  <td className="py-2 text-center">{owner ? '✅' : '—'}</td>
+                  <td className="py-2 text-center">{fm ? '✅' : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-blue-200 dark:border-blue-800/60 bg-emerald-50/50 dark:bg-emerald-950/10 dark:bg-blue-950/20 p-4">
+        <p className="text-sm text-emerald-700 dark:text-blue-300 font-medium">
+          Demo accounts: admin@blcts.ke, owner@blcts.ke, fm@blcts.ke
+        </p>
       </div>
     </div>
   );
 }
 
-function SystemSettingsSimple() {
+// ─── System Settings Page ─────────────────────────────────────────────────────
+
+function SystemSettingsPage() {
+  const systemItems = [
+    { label: 'Database', value: 'Supabase PostgreSQL', status: 'Connected', color: 'green' },
+    { label: 'AI Engine', value: 'Gemini 2.5 Flash', status: 'Configured', color: 'blue' },
+    { label: 'Regional Pricing', value: '10 Counties loaded', status: 'Live', color: 'green' },
+    { label: 'Materials Database', value: '44 items', status: 'Synced', color: 'green' },
+    { label: 'BOQ Engine', value: 'v2.0 — QS Standard', status: 'Ready', color: 'green' },
+    { label: 'Lifecycle Model', value: '30-year, 6% inflation', status: 'Active', color: 'green' },
+    { label: 'BOQ Estimates', value: 'Persisted to Supabase', status: 'Active', color: 'green' },
+    { label: 'Maintenance Tasks', value: 'Persisted to Supabase', status: 'Active', color: 'green' },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">System Settings</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Platform configuration and system information.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Platform configuration, integrations, and system health.</p>
       </div>
+
+      {/* Health Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[
-          { label: 'Database', value: 'Supabase PostgreSQL', status: 'Connected', color: 'green' },
-          { label: 'AI Engine', value: 'Gemini 2.5 Flash', status: 'Active', color: 'blue' },
-          { label: 'Pricing Data', value: '12 Counties', status: 'Loaded', color: 'green' },
-          { label: 'Materials DB', value: '44 Items', status: 'Synced', color: 'green' },
-          { label: 'BOQ Engine', value: 'v2.0 QS Standard', status: 'Ready', color: 'green' },
-          { label: 'Safety Margin', value: 'KSh 20 per unit', status: 'Configured', color: 'amber' },
-        ].map(item => (
-          <div key={item.label} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 p-4 flex items-center justify-between">
-            <div>
+        {systemItems.map(item => (
+          <div key={item.label} className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] p-4 flex items-center justify-between gap-3">
+            <div className="min-w-0">
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{item.label}</p>
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-100 mt-0.5">{item.value}</p>
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-100 mt-0.5 truncate">{item.value}</p>
             </div>
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+            <span className={`flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${
               item.color === 'green' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' :
-              item.color === 'blue' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400' :
+              item.color === 'blue' ? 'bg-blue-100 text-emerald-700 dark:bg-blue-950/40 dark:text-blue-400' :
               'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
             }`}>{item.status}</span>
           </div>
         ))}
+      </div>
+
+      {/* Platform Info */}
+      <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/6">
+          <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Platform Information</h2>
+        </div>
+        <div className="p-5 space-y-3">
+          {[
+            ['Application', 'Building Lifecycle Cost Tracking System (BLCTS)'],
+            ['Version', '2.0.0 — Presentation Build'],
+            ['Frontend', 'React 19 + TypeScript + Vite + Tailwind CSS 4'],
+            ['Backend', 'Supabase (PostgreSQL + Row Level Security)'],
+            ['AI Integration', 'Google Gemini 2.5 Flash — Blueprint Analysis'],
+            ['BOQ Standard', 'Kenya NCA / BORAQS Quantity Survey Standard'],
+            ['Lifecycle Model', 'Discounted cost-over-time with 6% annual inflation'],
+            ['Currency', 'Kenya Shilling (KSh)'],
+          ].map(([k, v]) => (
+            <div key={k} className="flex gap-4 text-sm">
+              <span className="w-36 flex-shrink-0 text-slate-500 dark:text-slate-400 font-medium">{k}</span>
+              <span className="text-slate-800 dark:text-slate-100">{v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Audit Log */}
+      <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/6">
+          <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Recent Audit Events</h2>
+        </div>
+        <div className="divide-y divide-slate-100 dark:divide-white/6">
+          {[
+            { time: new Date().toLocaleString(), action: 'Session started', user: 'Administrator', type: 'auth' },
+            { time: new Date(Date.now() - 3600000).toLocaleString(), action: 'Material price database viewed', user: 'Administrator', type: 'data' },
+            { time: new Date(Date.now() - 7200000).toLocaleString(), action: 'Regional pricing updated — Nairobi', user: 'Administrator', type: 'update' },
+          ].map((log, i) => (
+            <div key={i} className="flex items-center gap-3 px-5 py-3">
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${log.type === 'auth' ? 'bg-blue-400' : log.type === 'update' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-slate-700 dark:text-slate-300">{log.action}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{log.user} · {log.time}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

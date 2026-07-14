@@ -14,8 +14,8 @@ interface Props {
 
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
+    <div className="rounded-xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
+      <div className="px-5 py-4 border-b border-slate-100 dark:border-white/8 flex items-center gap-2">
         <span className="text-slate-500 dark:text-slate-400">{icon}</span>
         <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{title}</h2>
       </div>
@@ -34,11 +34,11 @@ interface SummaryRowProps {
 
 function SummaryRow({ label, value, bold, highlight, indent }: SummaryRowProps) {
   return (
-    <div className={`flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-700/50 last:border-0 ${highlight ? 'bg-blue-50 dark:bg-blue-950/20 -mx-5 px-5 rounded' : ''}`}>
+    <div className={`flex items-center justify-between py-2 border-b border-slate-100 dark:border-white/6 last:border-0 ${highlight ? 'bg-blue-50 dark:bg-blue-950/20 -mx-5 px-5 rounded' : ''}`}>
       <span className={`text-sm ${indent ? 'pl-4 text-slate-500 dark:text-slate-400' : ''} ${bold ? 'font-semibold text-slate-800 dark:text-slate-100' : 'text-slate-600 dark:text-slate-300'}`}>
         {label}
       </span>
-      <span className={`text-sm tabular-nums ${bold ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-200'} ${highlight ? 'text-blue-700 dark:text-blue-300' : ''}`}>
+      <span className={`text-sm tabular-nums ${bold ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-200'} ${highlight ? 'text-emerald-700 dark:text-blue-300' : ''}`}>
         {value}
       </span>
     </div>
@@ -109,7 +109,7 @@ function BOQTable({ estimate, showAll }: { estimate: BOQEstimate; showAll: boole
     <div className="overflow-x-auto">
       <table className="w-full min-w-[640px]">
         <thead>
-          <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
+          <tr className="border-b border-slate-200 dark:border-white/8 bg-slate-50 dark:bg-[#0f1629]">
             <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Section</th>
             <th className="text-right py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Qty</th>
             <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Unit</th>
@@ -120,7 +120,7 @@ function BOQTable({ estimate, showAll }: { estimate: BOQEstimate; showAll: boole
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-700/40">
           {rows.map((li, i) => (
-            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/3 transition-colors">
               <td className="py-2.5 px-4 text-sm text-slate-800 dark:text-slate-100">{li.section}</td>
               <td className="py-2.5 px-4 text-sm text-right tabular-nums text-slate-600 dark:text-slate-300">{li.quantity.toFixed(2)}</td>
               <td className="py-2.5 px-4 text-xs text-slate-500 dark:text-slate-400">{li.unit}</td>
@@ -138,7 +138,7 @@ function BOQTable({ estimate, showAll }: { estimate: BOQEstimate; showAll: boole
         {!showAll && estimate.lineItems.length > 8 && (
           <tfoot>
             <tr>
-              <td colSpan={6} className="py-2 px-4 text-xs text-slate-400 text-center bg-slate-50 dark:bg-slate-800/50">
+              <td colSpan={6} className="py-2 px-4 text-xs text-slate-400 text-center bg-slate-50 dark:bg-[#0f1629]">
                 Showing 8 of {estimate.lineItems.length} line items. Export CSV or print for full list.
               </td>
             </tr>
@@ -196,14 +196,14 @@ function ReportContent({ estimate, project }: { estimate: BOQEstimate; project: 
           <SummaryRow label="VAT (16%)" value={fmtKShFull(estimate.vatAmount)} indent />
           <div className="mt-3 pt-3 border-t-2 border-blue-300 dark:border-blue-700 flex items-center justify-between">
             <span className="text-base font-bold text-slate-900 dark:text-white">Total Project Cost</span>
-            <span className="text-xl font-black text-blue-700 dark:text-blue-300 tabular-nums">{fmtKShFull(estimate.totalProjectCost)}</span>
+            <span className="text-xl font-black text-emerald-700 dark:text-blue-300 tabular-nums">{fmtKShFull(estimate.totalProjectCost)}</span>
           </div>
         </div>
       </Section>
 
       {/* BOQ Summary Table */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between flex-wrap gap-3">
+      <div className="rounded-xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/8 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2">
             <Table className="w-4 h-4 text-slate-500 dark:text-slate-400" />
             <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">
@@ -213,7 +213,7 @@ function ReportContent({ estimate, project }: { estimate: BOQEstimate; project: 
           </div>
           <button
             onClick={() => setShowAllBOQ((v) => !v)}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-blue-400 hover:underline"
           >
             {showAllBOQ ? (
               <><ChevronUp className="w-3.5 h-3.5" /> Show fewer</>
@@ -265,7 +265,7 @@ function ReportContent({ estimate, project }: { estimate: BOQEstimate; project: 
 
         {/* Blueprint observations */}
         {estimate.blueprintObservations && estimate.blueprintObservations.length > 0 && (
-          <div className="mt-5 pt-5 border-t border-slate-100 dark:border-slate-700">
+          <div className="mt-5 pt-5 border-t border-slate-100 dark:border-white/8">
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Blueprint AI Observations</p>
             <ul className="space-y-1">
               {estimate.blueprintObservations.slice(0, 5).map((obs, i) => (
@@ -312,8 +312,8 @@ export default function ReportsPage({ project, onGoToEstimation }: Props) {
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <span className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">Reports</span>
+            <FileText className="w-5 h-5 text-emerald-600 dark:text-blue-400" />
+            <span className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-blue-400">Reports</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Reports & Downloads</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -326,14 +326,14 @@ export default function ReportsPage({ project, onGoToEstimation }: Props) {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => downloadCSV(currentEstimate)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/6 transition-colors"
             >
               <Download className="w-4 h-4" />
               Export CSV
             </button>
             <button
               onClick={() => window.print()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-md shadow-emerald-600/20-sm transition-colors"
             >
               <Printer className="w-4 h-4" />
               Print Report
@@ -350,7 +350,7 @@ export default function ReportsPage({ project, onGoToEstimation }: Props) {
         </div>
       ) : estimates.length === 0 ? (
         // Empty state
-        <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/40 px-8 py-16 text-center">
+        <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] px-8 py-16 text-center">
           <div className="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
             <BarChart3 className="w-8 h-8 text-blue-500" />
           </div>
@@ -360,7 +360,7 @@ export default function ReportsPage({ project, onGoToEstimation }: Props) {
           </p>
           <button
             onClick={onGoToEstimation}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-md shadow-emerald-600/20 transition-colors"
           >
             <DollarSign className="w-4 h-4" />
             Go to Cost Estimation
@@ -380,8 +380,8 @@ export default function ReportsPage({ project, onGoToEstimation }: Props) {
                     onClick={() => setSelectedId(est.id)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                       selectedId === est.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-blue-400 dark:hover:border-blue-600'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-white dark:bg-[#0f1629] border border-slate-300 dark:border-white/12 dark:border-white/12 text-slate-600 dark:text-slate-300 hover:border-blue-400 dark:hover:border-emerald-600'
                     }`}
                   >
                     <Calendar className="inline w-3 h-3 mr-1 align-middle" />
@@ -436,14 +436,14 @@ export default function ReportsPage({ project, onGoToEstimation }: Props) {
               <div className="flex items-center justify-center gap-4 py-4">
                 <button
                   onClick={() => downloadCSV(currentEstimate)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/6 shadow-sm transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   Export Full CSV
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-md shadow-emerald-600/20 transition-colors"
                 >
                   <Printer className="w-4 h-4" />
                   Download Full Report (Print)
