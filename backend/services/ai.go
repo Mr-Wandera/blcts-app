@@ -5,8 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"blcts-backend/models" // 👈 CLEAN LOCAL PATH
-
+	"github.com/Mr-Wandera/blcts-app/backend/models"
 	"github.com/google/uuid"
 )
 

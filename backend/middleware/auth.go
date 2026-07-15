@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/username/blcts-backend/handlers"
+	"github.com/Mr-Wandera/blcts-app/backend/handlers"
 )
 
 type contextKey string

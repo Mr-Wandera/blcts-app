@@ -1,4 +1,10 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState } from "react";
+import { supabase } from '../lib/supabase';
 import { 
   Building2, 
   Mail, 
@@ -16,6 +22,10 @@ import {
 } from "lucide-react";
 import { User } from "../types";
 import { motion, AnimatePresence } from "motion/react";
+
+// Enterprise Design System Components - Path corrected to match your setup
+import { Input } from "../ui/Input";
+import { Button } from "../ui/Button";
 
 interface AuthScreenProps {
   onLoginSuccess: (user: User) => void;
@@ -37,7 +47,7 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
   // Simulation states
   const [authStatus, setAuthStatus] = useState<"idle" | "verifying" | "syncing_sensor" | "finalizing" | "success">("idle");
   const [syncMessage, setSyncMessage] = useState("");
- 
+
   const handleQuickLogin = (preset: "admin" | "manager") => {
     setError(null);
     if (preset === "admin") {
@@ -57,51 +67,6 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
     }
     // Select login tab automatically
     setActiveTab("login");
-  };
-
-  // Initialize standard user accounts with SHA-256 secure hashes on mount
-  React.useEffect(() => {
-    const stored = localStorage.getItem("blcts-users");
-    if (!stored) {
-      const defaultUsers = [
-        {
-          id: "user-demo-admin",
-          email: "wanderaabdulwahab4@gmail.com",
-          name: "Abdulwahab Wandera",
-          role: "Developer",
-          organization: "Wandera Investments Ltd",
-          phone: "+254 712 345 678",
-          passwordHash: "54b79259254eaed6593410bd63c089de0d797d2b4f020683060a21bbad6da5ed" // SHA-256 of "executivePass123"
-        },
-        {
-          id: "user-demo-manager",
-          email: "manager.thika@blcts.com",
-          name: "Kamau Njoroge",
-          role: "Facility Manager",
-          organization: "Thika Block Management",
-          phone: "+254 722 987 654",
-          passwordHash: "276cbf1e0dd8b5d1bd515780206dfbf0257d379494feefee8503f2d85e9a7c2a" // SHA-256 of "managerPass99"
-        },
-        {
-          id: "user-demo-engineer",
-          email: "lead.engineer@davis-shirtliff.co.ke",
-          name: "Jane Atieno",
-          role: "Maintenance Engineer",
-          organization: "Davis & Shirtliff Tech",
-          phone: "+254 733 445 566",
-          passwordHash: "02f0cdcbe300c5a93067cecb66b1aa7a78834a5af425c02f73b636f7745433fc" // SHA-256 of "engineerPass22"
-        }
-      ];
-      localStorage.setItem("blcts-users", JSON.stringify(defaultUsers));
-    }
-  }, []);
-
-  // Secure SHA-256 cryptographic hashing helper
-  const hashPassword = async (pwd: string): Promise<string> => {
-    const msgBuffer = new TextEncoder().encode(pwd);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
   };
 
   const executeAuthSimulation = (userPayload: User) => {
@@ -137,36 +102,29 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
     }
 
     try {
-      const hashedInput = await hashPassword(password);
-      const storedUsersJson = localStorage.getItem("blcts-users");
-      const storedUsers = storedUsersJson ? JSON.parse(storedUsersJson) : [];
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
+      });
 
-      const matchedUser = storedUsers.find(
-        (u: any) => u.email.toLowerCase().trim() === email.toLowerCase().trim()
-      );
-
-      if (!matchedUser) {
-        setError("Account not found. Please register as a Developer or Facility Manager.");
+      if (authError) {
+        setError(authError.message);
         return;
       }
 
-      if (matchedUser.passwordHash !== hashedInput) {
-        setError("Invalid secret passcode. Access denied.");
-        return;
+      if (data.session) {
+        const userPayload: User = {
+          id: data.session.user.id,
+          name: data.session.user.user_metadata?.name || "Authorized User",
+          email: data.session.user.email || email,
+          role: data.session.user.user_metadata?.role || "Facility Manager",
+          organization: data.session.user.user_metadata?.organization || "Enterprise Org",
+          phone: data.session.user.user_metadata?.phone || ""
+        };
+        executeAuthSimulation(userPayload);
       }
-
-      const userPayload: User = {
-        id: matchedUser.id || `user-${Date.now()}`,
-        name: matchedUser.name,
-        email: matchedUser.email,
-        role: matchedUser.role,
-        organization: matchedUser.organization,
-        phone: matchedUser.phone
-      };
-
-      executeAuthSimulation(userPayload);
     } catch (err) {
-      setError("System encryption error during verification.");
+      setError("System connectivity error during verification.");
     }
   };
 
@@ -185,42 +143,35 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
     }
 
     try {
-      const storedUsersJson = localStorage.getItem("blcts-users");
-      const storedUsers = storedUsersJson ? JSON.parse(storedUsersJson) : [];
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            name,
+            role,
+            organization: organization || "Municipal Land Management",
+            phone: phone || "+254 700 000 000"
+          }
+        }
+      });
 
-      const userExists = storedUsers.some(
-        (u: any) => u.email.toLowerCase().trim() === email.toLowerCase().trim()
-      );
-
-      if (userExists) {
-        setError("This email address is already registered in BLCTS.");
+      if (authError) {
+        setError(authError.message);
         return;
       }
 
-      const passwordHash = await hashPassword(password);
-      const newRegisteredUser = {
-        id: `user-${Date.now()}`,
-        name,
-        email: email.toLowerCase().trim(),
-        role,
-        organization: organization || "Municipal Land Management",
-        phone: phone || "+254 700 000 000",
-        passwordHash
-      };
-
-      const updatedUsers = [...storedUsers, newRegisteredUser];
-      localStorage.setItem("blcts-users", JSON.stringify(updatedUsers));
-
-      const userPayload: User = {
-        id: newRegisteredUser.id,
-        name: newRegisteredUser.name,
-        email: newRegisteredUser.email,
-        role: newRegisteredUser.role as any,
-        organization: newRegisteredUser.organization,
-        phone: newRegisteredUser.phone
-      };
-
-      executeAuthSimulation(userPayload);
+      if (data.session || data.user) {
+        const userPayload: User = {
+          id: data.user?.id || `user-${Date.now()}`,
+          name: name,
+          email: email,
+          role: role as any,
+          organization: organization,
+          phone: phone
+        };
+        executeAuthSimulation(userPayload);
+      }
     } catch (err) {
       setError("System encryption error during registration.");
     }
@@ -386,128 +337,107 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
                 <form onSubmit={activeTab === "login" ? handleLoginSubmit : handleSignupSubmit} className="space-y-4 text-left">
                   
                   {activeTab === "signup" && (
-                    <div className="space-y-1.5">
-                      <label className="block text-[10px] font-bold text-slate-450 dark:text-slate-505 uppercase tracking-wider block font-display">
-                        Full Name *
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Abdulwahab Wandera"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white text-slate-900 dark:text-white font-medium"
-                        />
-                        <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-                      </div>
-                    </div>
+                    <Input
+                      label="Full Name *"
+                      type="text"
+                      required
+                      placeholder="e.g. Abdulwahab Wandera"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      icon={<UserIcon className="w-4 h-4" />}
+                    />
                   )}
 
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-bold text-slate-450 dark:text-slate-550 uppercase tracking-wider block font-display">
-                      Work Email *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="email"
-                        required
-                        placeholder="e.g. wanderaabdulwahab4@gmail.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white text-slate-900 dark:text-white font-medium"
-                      />
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-                    </div>
-                  </div>
+                  <Input
+                    label="Work Email *"
+                    type="email"
+                    required
+                    placeholder="e.g. wanderaabdulwahab4@gmail.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    icon={<Mail className="w-4 h-4" />}
+                  />
 
                   {/* Standard details for user customization */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="block text-[10px] font-bold text-slate-450 dark:text-slate-550 uppercase tracking-wider block font-display">
+                    <div className="space-y-1.5 w-full">
+                      <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-display">
                         System Role Profile *
                       </label>
-                      <div className="relative">
+                      <div className="relative w-full">
+                        <Briefcase className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
                         <select
                           value={role}
                           onChange={(e) => setRole(e.target.value as any)}
-                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white text-slate-900 dark:text-white font-semibold cursor-pointer appearance-none"
+                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-3 pl-10 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-4 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-emerald-500/20 focus:bg-white dark:focus:bg-slate-950 transition-all duration-200 appearance-none cursor-pointer"
                         >
                           <option value="Developer">Developer</option>
                           <option value="Facility Manager">Facility Manager</option>
                         </select>
-                        <Briefcase className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="block text-[10px] font-bold text-slate-450 dark:text-slate-550 uppercase tracking-wider block font-display">
-                        Mobile Money Contact (KES Draw)
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="tel"
-                          placeholder="e.g. +254 712 345 678"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white text-slate-900 dark:text-white font-mono"
-                        />
-                        <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-                      </div>
-                    </div>
+                    <Input
+                      label="Mobile Money Contact (KES Draw)"
+                      type="tel"
+                      placeholder="e.g. +254 712 345 678"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      icon={<Phone className="w-4 h-4" />}
+                      className="font-mono"
+                    />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-bold text-slate-450 dark:text-slate-550 uppercase tracking-wider block font-display">
-                      Corporate Organization
-                    </label>
-                    <input
+                  {activeTab === "signup" && (
+                    <Input
+                      label="Corporate Organization"
                       type="text"
                       placeholder="e.g. Wandera Investments Ltd"
                       value={organization}
                       onChange={(e) => setOrganization(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white text-slate-900 dark:text-white"
                     />
-                  </div>
+                  )}
 
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between">
-                      <label className="block text-[10px] font-bold text-slate-450 dark:text-slate-550 uppercase tracking-wider block font-display">
+                  <div className="space-y-1.5 w-full">
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-display">
                         Secret Password *
                       </label>
                       {activeTab === "login" && (
-                        <button type="button" className="text-[10px] text-emerald-500 dark:text-emerald-400 font-bold hover:underline">
+                        <button type="button" className="text-[10px] text-emerald-500 dark:text-emerald-400 font-bold hover:underline cursor-pointer">
                           Forgot passcode?
                         </button>
                       )}
                     </div>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 pl-10 pr-10 text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:bg-white text-slate-900 dark:text-white font-mono"
-                      />
-                      <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      icon={<Lock className="w-4 h-4" />}
+                      className="font-mono"
+                      rightElement={
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      }
+                    />
                   </div>
 
-                  <button
+                  <Button
                     type="submit"
-                    className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-350 text-slate-950 font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-lg hover:shadow-emerald-500/10 transition-all duration-200 flex items-center justify-center gap-2 mt-6 cursor-pointer transform active:scale-95"
+                    variant="primary"
+                    size="lg"
+                    className="w-full mt-6"
+                    rightIcon={<ArrowRight className="w-4 h-4" />}
                   >
-                    <span>{activeTab === "login" ? "Verify Credentials" : "Initialize Infrastructure Profile"}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                    {activeTab === "login" ? "Verify Credentials" : "Initialize Infrastructure Profile"}
+                  </Button>
                 </form>
 
                 {/* Quick login preset triggers - Absolute Craft polish for effortless testing */}

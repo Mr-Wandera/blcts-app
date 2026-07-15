@@ -8,8 +8,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/username/blcts-backend/models"
-	"github.com/username/blcts-backend/services"
+	"github.com/Mr-Wandera/blcts-app/backend/models"
+	"github.com/Mr-Wandera/blcts-app/backend/services"
 )
 
 // DBConnectionPool interfaces standard operations for PostgreSQL (e.g., standard sql or pgx interface)

@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { supabase } from './lib/supabase';
+import { useEffect } from 'react';
 import React, { useState, useMemo } from "react";
 import {
   Menu,
@@ -51,8 +53,6 @@ import Compliance from "./components/Compliance";
 import Notifications from "./components/Notifications";
 import { ActiveTabType } from "./types";
 
-
-
 const getInitials = (fullName: string) => {
   if (!fullName) return "AW";
   const parts = fullName.trim().split(/\s+/);
@@ -63,15 +63,42 @@ const getInitials = (fullName: string) => {
 };
 
 export default function App() {
-  // User Authentication state
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    try {
-      const stored = localStorage.getItem("blcts-user");
-      return stored ? JSON.parse(stored) : null;
-    } catch (e) {
-      return null;
-    }
-  });
+  // Enterprise Supabase Session Management
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // 1. Check for an existing session on load
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setCurrentUser({
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || 'Authorized User',
+          role: session.user.user_metadata?.role || 'Facility Manager',
+          organization: session.user.user_metadata?.organization || 'Enterprise Org',
+          phone: session.user.user_metadata?.phone || ''
+        });
+      }
+    });
+
+    // 2. Listen for login/logout events securely
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setCurrentUser({
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || 'Authorized User',
+          role: session.user.user_metadata?.role || 'Facility Manager',
+          organization: session.user.user_metadata?.organization || 'Enterprise Org',
+          phone: session.user.user_metadata?.phone || ''
+        });
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const [showAuthOnly, setShowAuthOnly] = useState<boolean>(false);
 
@@ -159,12 +186,13 @@ export default function App() {
     triggerToast(`Welcome back, ${userPayload.name}! Access granted as ${userPayload.role}.`, "success");
   };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
+  const handleLogout = async () => {
     try {
-      localStorage.removeItem("blcts-user");
-    } catch (e) {}
-    triggerToast("Logged out successfully. Secure session terminated.", "info");
+      await supabase.auth.signOut();
+      triggerToast("Logged out successfully. Secure session terminated.", "info");
+    } catch (error) {
+      triggerToast("Error terminating session.", "warning");
+    }
   };
 
   // Switch property
@@ -545,10 +573,10 @@ export default function App() {
               <div className="flex items-center gap-3 pl-3 border-l border-slate-100 dark:border-slate-800">
                 <div className="text-right hidden sm:block">
                   <span className="text-slate-955 dark:text-slate-100 text-xs font-bold block leading-none">
-                    {currentUser?.name || "Abdulwahab Wandera"}
+                    {currentUser?.name || "Authorized User"}
                   </span>
                   <span className="text-slate-400 dark:text-slate-500 text-[9px] block uppercase font-mono font-bold tracking-wider mt-1">
-                    {currentUser?.role || "SaaS Admin Account"}
+                    {currentUser?.role || "Facility Manager"}
                   </span>
                 </div>
                 <div className="w-9 h-9 rounded-xl bg-slate-950 dark:bg-slate-850 text-slate-100 font-extrabold text-xs flex items-center justify-center border border-slate-800 dark:border-slate-700 shadow-sm select-none">

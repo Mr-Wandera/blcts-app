@@ -1,21 +1,29 @@
-package middleware
+package models
 
-import "net/http"
+import (
+	"time"
 
-// CORS establishes structural cross-origin access control rules
-func CORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*") // Adjust to specific domain under production deployments
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
+	"github.com/google/uuid"
+)
 
-		// Instantly satisfy HTTP preflight OPTIONS requests without routing overheads
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
+// CostEntry records a single capex/opex/maintenance ledger transaction for a building
+type CostEntry struct {
+	ID          uuid.UUID `json:"id"`
+	BuildingID  uuid.UUID `json:"building_id"`
+	Phase       string    `json:"phase"` // capex, opex, maintenance, end-of-life
+	Category    string    `json:"category"`
+	Amount      float64   `json:"amount"`
+	Description string    `json:"description"`
+	Date        time.Time `json:"date"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
 
-		next.ServeHTTP(w, r)
-	})
+// ChartDataPoint represents one month's budget-vs-actual figures for Recharts/Chart.js
+type ChartDataPoint struct {
+	Month       string  `json:"month"`
+	CapexBudget float64 `json:"capex_budget"`
+	CapexActual float64 `json:"capex_actual"`
+	OpexBudget  float64 `json:"opex_budget"`
+	OpexActual  float64 `json:"opex_actual"`
 }

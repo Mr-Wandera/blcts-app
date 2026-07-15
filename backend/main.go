@@ -12,9 +12,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/username/blcts-backend/config"
-	"github.com/username/blcts-backend/handlers"
-	customMiddleware "github.com/username/blcts-backend/middleware"
+	"github.com/Mr-Wandera/blcts-app/backend/config"
+	"github.com/Mr-Wandera/blcts-app/backend/handlers"
+	customMiddleware "github.com/Mr-Wandera/blcts-app/backend/middleware"
 )
 
 // DBAdapter bridges any structural type mismatch between config pool signatures and handlers interfaces
