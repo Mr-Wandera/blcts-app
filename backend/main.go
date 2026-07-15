@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/Mr-Wandera/blcts-app/backend/config"
 	"github.com/Mr-Wandera/blcts-app/backend/handlers"
 	customMiddleware "github.com/Mr-Wandera/blcts-app/backend/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 // DBAdapter bridges any structural type mismatch between config pool signatures and handlers interfaces
@@ -40,42 +40,37 @@ func (rsa RowScannerAdapter) Scan(dest ...interface{}) error {
 }
 
 func main() {
-	// Initialize logging - FIXED: Removed function variable from bitwise operation
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	log.Println("Starting BLCTS Core Backend Enterprise Architecture...")
+	log.Println("Starting BLCTS Backend...")
 
-	// 1. Establish PostgreSQL Connection Pool handles (with automatic fallback to mock logs if connection fails)
 	var dbPool handlers.DBConnectionPool
 	db, err := config.ConnectDatabase()
 	if err != nil {
-		log.Printf("DATABASE CONFIG WARNING: %s\n", err.Error())
-		log.Println("⚡ Running in sandbox development mode with in-memory persistence models.")
+		log.Printf("DATABASE WARNING: %s\n", err.Error())
+		log.Println("Running in sandbox mode with in-memory persistence.")
 	} else {
-		log.Println("🚀 Concurrency database pool successfully linked to PostgreSQL.")
-		dbPool = DBAdapter{Pool: db} // Secure wrapper adaptation injection layer
+		log.Println("Database pool linked to PostgreSQL.")
+		dbPool = DBAdapter{Pool: db}
 		defer db.Pool.Close()
 	}
 
-	// 2. Initialize HTTP Handler Dependencies container
 	deps := &handlers.HandlerDeps{
 		DB: dbPool,
 	}
 
-	// 3. Configure HTTP routing via Chi
 	r := chi.NewRouter()
 
-	// Implement industry standard middleware stacks
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
 	r.Use(customMiddleware.CORS)
 
-	// Public Health Probes
+	// Public health probe
 	r.Get("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		status := "healthy"
 		if dbPool == nil {
-			status = "degraded (mock active)"
+			status = "degraded (sandbox mode)"
 		}
 		handlers.SendJSON(w, http.StatusOK, map[string]interface{}{
 			"status":    status,
@@ -84,25 +79,46 @@ func main() {
 		})
 	})
 
-	// Public Metrics / Visualization route (safe read-only display logs used by Chart.js graphs)
+	// Public read-only dashboard data (charts, KPIs)
 	r.Get("/api/dashboard/{building_id}", deps.HandleGetDashboard)
 
-	// Secured API Endpoint Router Groups protected by cryptographic JSON Web Token verified handles
-	r.Group(func(secured chi.Router) { // <-- FIXED: Changed from r.RouteReceiver to chi.Router standard type definitions
-		// Apply JWT Verification and strict Role Privilege Guards (owner/manager/staff)
+	// Protected endpoints with JWT + role-based access control
+	r.Group(func(secured chi.Router) {
 		secured.Use(customMiddleware.EnsureJWT)
 
-		// Create invoice entries inside ledger (requires role permission to write logs)
-		secured.With(customMiddleware.RequireRole("owner", "manager")).Post("/api/costs", deps.HandleCreateCost)
+		// Cost entry creation: Administrator and Facility Manager only
+		secured.With(customMiddleware.RequireRole("administrator", "facility_manager")).Post("/api/costs", deps.HandleCreateCost)
 
-		// Disburse actual contractor pay outs via M-Pesa sandbox integration
-		secured.With(customMiddleware.RequireRole("owner")).Post("/api/maintenance/{task_id}/pay", deps.HandleDisburseContractorMpesa)
+		// Cost entry deletion: Administrator only
+		secured.With(customMiddleware.RequireRole("administrator")).Delete("/api/costs/{id}", deps.HandleDeleteCost)
+
+		// User management: Administrator only
+		secured.With(customMiddleware.RequireRole("administrator")).Post("/api/users", deps.HandleCreateUser)
+		secured.With(customMiddleware.RequireRole("administrator")).Delete("/api/users/{id}", deps.HandleDeleteUser)
+		secured.With(customMiddleware.RequireRole("administrator")).Put("/api/users/{id}/role", deps.HandleUpdateUserRole)
+
+		// Material pricing: Administrator only
+		secured.With(customMiddleware.RequireRole("administrator")).Put("/api/materials/{id}", deps.HandleUpdateMaterial)
+
+		// Project management: Administrator and Facility Manager
+		secured.With(customMiddleware.RequireRole("administrator", "facility_manager")).Post("/api/projects", deps.HandleCreateProject)
+		secured.With(customMiddleware.RequireRole("administrator")).Delete("/api/projects/{id}", deps.HandleDeleteProject)
+
+		// Maintenance records: Administrator and Facility Manager
+		secured.With(customMiddleware.RequireRole("administrator", "facility_manager")).Post("/api/maintenance", deps.HandleCreateMaintenance)
+		secured.With(customMiddleware.RequireRole("administrator", "facility_manager")).Put("/api/maintenance/{id}", deps.HandleUpdateMaintenance)
+
+		// System settings: Administrator only
+		secured.With(customMiddleware.RequireRole("administrator")).Put("/api/settings", deps.HandleUpdateSettings)
+
+		// Building Owner: read-only access to owned buildings
+		secured.With(customMiddleware.RequireRole("administrator", "facility_manager", "building_owner")).Get("/api/buildings", deps.HandleListBuildings)
+		secured.With(customMiddleware.RequireRole("administrator", "facility_manager", "building_owner")).Get("/api/buildings/{id}/report", deps.HandleGetBuildingReport)
 	})
 
-	// 4. Server configuration binding to host environment interfaces
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // Default non-blocking backend channel
+		port = "8080"
 	}
 	serverAddr := fmt.Sprintf("0.0.0.0:%s", port)
 
@@ -114,28 +130,25 @@ func main() {
 		IdleTimeout:  2 * time.Minute,
 	}
 
-	// 5. Build Graceful Server Shutdown mechanics listening to system interrupts
 	shutdownChan := make(chan os.Signal, 1)
 	signal.Notify(shutdownChan, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
 	go func() {
-		log.Printf("Server listening actively on: http://%s\n", serverAddr)
+		log.Printf("Server listening on: http://%s\n", serverAddr)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Critical listener breakdown: %s\n", err.Error())
+			log.Fatalf("Listener error: %s\n", err.Error())
 		}
 	}()
 
-	// Block thread until interrupt signal arrives
 	sig := <-shutdownChan
-	log.Printf("Graceful shutdown sequence triggered on signal: %s\n", sig)
+	log.Printf("Graceful shutdown triggered: %s\n", sig)
 
-	// Formulate 15 second context limit for pending database/HTTP loops to drain safely
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("Forced server exit: %s\n", err.Error())
+		log.Fatalf("Forced exit: %s\n", err.Error())
 	}
 
-	log.Println("Server is gracefully halted. Clean transition complete.")
+	log.Println("Server stopped. Clean shutdown complete.")
 }

@@ -10,7 +10,7 @@ import (
 type CostEntry struct {
 	ID          uuid.UUID `json:"id"`
 	BuildingID  uuid.UUID `json:"building_id"`
-	Phase       string    `json:"phase"` // capex, opex, maintenance, end-of-life
+	Phase       string    `json:"phase"`
 	Category    string    `json:"category"`
 	Amount      float64   `json:"amount"`
 	Description string    `json:"description"`

@@ -2,70 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Building Lifecycle Cost Tracking System</title>
-    <script>
-      // Filter out benign development-only environment logs, warnings and unhandled rejections
-      (function() {
-        // Hide standard WebSocket connection alerts resulting from disabled HMR
-        window.addEventListener('unhandledrejection', function(event) {
-          const reason = event.reason;
-          if (reason) {
-            const msg = typeof reason === 'string' ? reason : (reason.message || '');
-            if (
-              msg.toLowerCase().includes('websocket') ||
-              msg.toLowerCase().includes('web socket') ||
-              msg.toLowerCase().includes('hmr') ||
-              msg.toLowerCase().includes('closed without opened')
-            ) {
-              event.preventDefault();
-              event.stopImmediatePropagation();
-            }
-          }
-        }, true);
-
-        window.addEventListener('error', function(event) {
-          const msg = event.message || '';
-          if (
-            msg.toLowerCase().includes('websocket') ||
-            msg.toLowerCase().includes('web socket') ||
-            msg.toLowerCase().includes('hmr')
-          ) {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-          }
-        }, true);
-
-        // Supress initial Recharts layout sizing warning before container calculates real dimensions
-        const originalWarn = console.warn;
-        console.warn = function(...args) {
-          if (args[0] && typeof args[0] === 'string' && (
-            args[0].includes('width(-1)') || 
-            args[0].includes('height(-1)') || 
-            args[0].includes('should be greater than 0')
-          )) {
-            return;
-          }
-          originalWarn.apply(console, args);
-        };
-
-        // Suppress benign websocket connection error prints
-        const originalError = console.error;
-        console.error = function(...args) {
-          if (args[0] && typeof args[0] === 'string' && (
-            args[0].includes('failed to connect to websocket') ||
-            args[0].includes('WebSocket connection')
-          )) {
-            return;
-          }
-          originalError.apply(console, args);
-        };
-      })();
-    </script>
+    <title>BLCTS — Building Lifecycle Cost Tracking System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

@@ -60,16 +60,16 @@ func GetAIPredictions(buildingID uuid.UUID, historicalCosts []models.CostEntry) 
 		seasonalFactor := 0.85 + rng.Float64()*0.3
 		projectedMaintenance = avgMaintenance * 3.0 * seasonalFactor
 	} else {
-		// Fallback seed baseline for empty portfolios (e.g. Mombasa and Nairobi mock bases)
+		// Fallback seed baseline for empty portfolios
 		projectedMaintenance = 450000.0 + rng.Float64()*150000.0
 	}
 
 	// 3. Asset Health Anomaly Detection (20% above historical statistical thresholds)
 	var alerts []AnomalyAlert
 
-	// Mocking baseline control group if data hasn't accumulated in database
+	// Baseline control group if data hasn't accumulated in database
 	baselineUtilityAvg := 120000.0 // Normal KSh utility bill reference
-	recentUtilityBill := 148500.0  // Sample simulated anomalous record
+	recentUtilityBill := 148500.0  // Anomalous record reference
 
 	if utilityCount > 0 {
 		baselineUtilityAvg = currentUtilitiesTotal / float64(utilityCount)

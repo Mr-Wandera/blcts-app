@@ -175,22 +175,22 @@ function ensureDatabase() {
 
   const defaultUsers = [
     {
-      id: "user-demo-admin",
+      id: "user-admin",
       email: "wanderaabdulwahab4@gmail.com",
       name: "Abdulwahab Wandera",
-      role: "Developer",
+      role: "Administrator",
       organization: "Wandera Investments Ltd",
       phone: "+254 712 345 678",
-      passwordHash: "54b79259254eaed6593410bd63c089de0d797d2b4f020683060a21bbad6da5ed" // hash of "executivePass123"
+      passwordHash: "54b79259254eaed6593410bd63c089de0d797d2b4f020683060a21bbad6da5ed"
     },
     {
-      id: "user-demo-manager",
+      id: "user-manager",
       email: "manager.thika@blcts.com",
       name: "Kamau Njoroge",
       role: "Facility Manager",
       organization: "Thika Block Management",
       phone: "+254 722 987 654",
-      passwordHash: "276cbf1e0dd8b5d1bd515780206dfbf0257d379494feefee8503f2d85e9a7c2a" // hash of "managerPass99"
+      passwordHash: "276cbf1e0dd8b5d1bd515780206dfbf0257d379494feefee8503f2d85e9a7c2a"
     }
   ];
 
@@ -354,6 +354,9 @@ async function startServer() {
       return res.status(400).json({ error: "Required fields missing for user secure enrollment" });
     }
 
+    const allowedSelfRegisterRoles = ["Building Owner", "Facility Manager"];
+    const assignedRole = allowedSelfRegisterRoles.includes(role) ? role : "Building Owner";
+
     const users = readJSON(USERS_FILE);
     const exists = users.some((u: any) => u.email.toLowerCase().trim() === email.toLowerCase().trim());
     if (exists) {
@@ -364,7 +367,7 @@ async function startServer() {
       id: `user-${Date.now()}`,
       email: email.toLowerCase().trim(),
       name,
-      role,
+      role: assignedRole,
       organization: organization || "General Real Estate Developer",
       phone: phone || "",
       passwordHash
@@ -390,41 +393,42 @@ async function startServer() {
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        // Safe, beautiful fallback if Gemini API key is not set in Settings
-        return res.json({
-          estimatedFloorArea: 2800,
-          floors: 5,
-          buildingType: "Mixed-Use",
-          observations: [
-            "Extracted floor plan layout shows optimized column layouts compressing structural steel rebar usage.",
-            "Elevations depict a pitched roof truss structure suited for localized rainwater harvesting systems.",
-            "Water reticulation layout maps efficient wet-room groupings adjacent to main utility service ducts."
-          ]
+        return res.status(503).json({
+          success: false,
+          error: "AI_ANALYSIS_UNAVAILABLE",
+          message: "Blueprint analysis could not be completed because the AI service is not configured. Please contact your Administrator to enable AI blueprint analysis, or enter the project specifications manually."
         });
       }
 
       const ai = new GoogleGenAI({ apiKey });
 
-      const planPrompt = `You are an expert Construction Planner and Senior Quantity Surveyor practicing in Nairobi, Kenya.
-Analyze the attached architectural plan document: "${fileName || 'architectural_drawing.pdf'}".
-Meticulously inspect the layout, drawing content, stamps, notations, and parameters.
-Estimate or extract the following structural and design parameters:
-1. Estimated floor area in Square Meters (SQM). Estimate a realistic figure based on the plans (usually between 100 and 15000 SQM).
-2. Estimated number of floors/levels (usually between 1 and 30).
-3. Primary building type (Residential, Commercial, Mixed-Use, Industrial).
-4. Actonable construction and materials lifecycle observations (minimum 3 professional observations) detailing structural efficiency, roofing types, or potential damp-proofing/waterproofing issues.
+      const planPrompt = `You are a Senior Quantity Surveyor and Architect licensed in Kenya, specializing in construction cost estimation.
 
-Return strictly as a JSON object matching the requested schema.`;
+Analyze the attached architectural drawing: "${fileName || 'architectural_drawing'}".
+
+Your job is to EXTRACT ONLY what you can actually see or measure from this drawing.
+DO NOT invent or fabricate measurements. If you cannot determine something, return null for that field.
+
+Extract the following where visible:
+1. estimatedFloorArea: Gross Floor Area in m² (per floor). Null if not determinable.
+2. floors: Number of floors/storeys. Null if not determinable.
+3. buildingType: "Residential", "Maisonette", "Apartment", "Commercial", "Office", "Mixed-Use", "Warehouse", "School", "Hospital", "Industrial", or "Unknown" if unclear.
+4. confidence: Your confidence 0.0–1.0 in the extracted measurements. Be honest. 0.5 = uncertain.
+5. observations: 3–6 honest observations. For any dimension you cannot determine, state exactly: "Unable to determine [field] from uploaded drawing."
+   Include: what you CAN see, what you CANNOT determine, and any quality concerns.
+6. roomCount: Approximate room count if floor plan is visible. Null if not visible.
+7. bedrooms: Bedroom count if visible. Null if not determinable.
+8. bathrooms: Bathroom count if visible. Null if not determinable.
+9. roofType: "Flat Roof", "Pitched Roof", "Trussed Roof", "Unknown" or null.
+10. drawingScale: Scale string (e.g. "1:100") if marked on drawing. Null if not found.
+
+HONESTY RULE: Never guess dimensions. Return null rather than a fabricated number.
+Return strictly as JSON matching the schema.`;
 
       const result = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: [
-          {
-            inlineData: {
-              data: image,
-              mimeType: mimeType
-            }
-          },
+          { inlineData: { data: image, mimeType: mimeType } },
           planPrompt
         ],
         config: {
@@ -432,16 +436,18 @@ Return strictly as a JSON object matching the requested schema.`;
           responseSchema: {
             type: 'OBJECT',
             properties: {
-              estimatedFloorArea: { type: 'INTEGER', description: 'Estimated floor area in SQM' },
-              floors: { type: 'INTEGER', description: 'Estimated number of floors/levels' },
-              buildingType: { type: 'STRING', description: 'Residential, Commercial, Mixed-Use, or Industrial' },
-              observations: {
-                type: 'ARRAY',
-                items: { type: 'STRING' },
-                description: '3-4 professional quantity surveying observations'
-              }
+              estimatedFloorArea: { type: 'INTEGER', description: 'GFA per floor in m², null if not determinable' },
+              floors:             { type: 'INTEGER', description: 'Number of floors, null if not determinable' },
+              buildingType:       { type: 'STRING',  description: 'Building classification' },
+              confidence:         { type: 'NUMBER',  description: 'Confidence 0.0–1.0' },
+              observations:       { type: 'ARRAY', items: { type: 'STRING' }, description: '3–6 honest observations' },
+              roomCount:          { type: 'INTEGER', description: 'Approximate rooms, null if unknown' },
+              bedrooms:           { type: 'INTEGER', description: 'Bedroom count, null if unknown' },
+              bathrooms:          { type: 'INTEGER', description: 'Bathroom count, null if unknown' },
+              roofType:           { type: 'STRING',  description: 'Roof type or null' },
+              drawingScale:       { type: 'STRING',  description: 'Scale e.g. 1:100, null if not found' },
             },
-            required: ['estimatedFloorArea', 'floors', 'buildingType', 'observations']
+            required: ['estimatedFloorArea', 'floors', 'buildingType', 'confidence', 'observations']
           }
         }
       });
@@ -455,17 +461,10 @@ Return strictly as a JSON object matching the requested schema.`;
       res.json(planAnalysis);
 
     } catch (err: any) {
-      console.error("Express Plan Analysis Error:", err);
-      // Return beautiful default fallback if service fails
-      res.json({
-        estimatedFloorArea: 3200,
-        floors: 6,
-        buildingType: "Commercial",
-        observations: [
-          "Uniform grid configuration detected in architectural plan suitable for high-strength concrete columns.",
-          "Substructure denotes high load-bearing capacity requiring minimal localized piling.",
-          "Window layouts and orientation permit maximum natural daylighting, reducing future utility OPEX."
-        ]
+      return res.status(503).json({
+        success: false,
+        error: "AI_ANALYSIS_ERROR",
+        message: "Blueprint analysis could not be completed due to a processing error. Please try again or enter specifications manually."
       });
     }
   });
@@ -679,8 +678,7 @@ The total sum of these 10 categories should align closely with the expected cons
       res.json(parsedJson);
 
     } catch (err: any) {
-      console.error("Express Cost Estimation Error:", err);
-      res.status(500).json({ error: "Could not generate cost estimate." });
+            res.status(500).json({ error: "Could not generate cost estimate." });
     }
   });
 
@@ -695,12 +693,13 @@ The total sum of these 10 categories should align closely with the expected cons
 
       const getFallbackForecast = () => {
         const costVal = property.capexBudget || 100000000;
-        const progressBase = property.id === "prop-1" ? 68 : property.id === "prop-2" ? 42 : 100;
         
         // Apply modifiers to base speed
         let speedMult = workforceModifier;
         if (supplyChainStatus === "Bottlenecked") speedMult *= 0.65;
         if (supplyChainStatus === "Accelerated") speedMult *= 1.25;
+
+        const progressBase = Math.min(100, Math.max(0, Math.round((property.capexBudget ? 50 : 0) * speedMult)));
 
         const aiCompletionProgress = Math.min(100, Math.max(0, Math.round(progressBase * (speedMult > 1 ? 1 + (speedMult - 1) * 0.15 : speedMult))));
         const factorCompleteness = (100 - aiCompletionProgress) / 100;
@@ -784,7 +783,7 @@ The total sum of these 10 categories should align closely with the expected cons
         const msMilestones = [
           { milestoneName: "Substructure & Excavations", standardProgressPercent: 15, estimatedDate: "2025-04-10", status: aiCompletionProgress > 15 ? "Completed" : "In-Progress" },
           { milestoneName: "Superstructure Hollow Frame Post Concreting", standardProgressPercent: 45, estimatedDate: "2025-10-15", status: aiCompletionProgress > 45 ? "Completed" : aiCompletionProgress > 15 ? "In-Progress" : "Scheduled" },
-          { milestoneName: "Zoning & Brickwork Masonry Masonry Work", standardProgressPercent: 65, estimatedDate: "2026-03-05", status: aiCompletionProgress > 65 ? "Completed" : aiCompletionProgress > 45 ? "In-Progress" : "Scheduled" },
+          { milestoneName: "Zoning & Brickwork Masonry Work", standardProgressPercent: 65, estimatedDate: "2026-03-05", status: aiCompletionProgress > 65 ? "Completed" : aiCompletionProgress > 45 ? "In-Progress" : "Scheduled" },
           { milestoneName: "Glazing Glass, MEP Inlets, and Electrical Wiring", standardProgressPercent: 85, estimatedDate: "2026-08-20", status: aiCompletionProgress > 85 ? "Completed" : aiCompletionProgress > 65 ? "In-Progress" : "Scheduled" },
           { milestoneName: "Interior Plaster, Paint Assemblies, & Testing", standardProgressPercent: 100, estimatedDate: adjustedDate.toISOString().substring(0, 10), status: aiCompletionProgress === 100 ? "Completed" : aiCompletionProgress > 85 ? "In-Progress" : "Scheduled" }
         ];
@@ -922,8 +921,7 @@ Ensure the returned compliance structure strictly adheres to the requested JSON 
       res.json(parsedJson);
 
     } catch (err: any) {
-      console.error("Express Construction Forecasting Error:", err);
-      res.status(500).json({ error: "Could not generate forecast through Gemini or fallback engines." });
+            res.status(500).json({ error: "Could not generate forecast through Gemini or fallback engines." });
     }
   });
 
@@ -943,8 +941,7 @@ Ensure the returned compliance structure strictly adheres to the requested JSON 
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[BLCTS PORTAL] Secure Express+Vite Gateway listening active on http://0.0.0.0:${PORT}`);
-  });
+      });
 }
 
 startServer();

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -30,18 +31,45 @@ import { Button } from "../ui/Button";
 interface AuthScreenProps {
   onLoginSuccess: (user: User) => void;
   isDarkMode: boolean;
+=======
+import { useState } from 'react';
+import { Building2, Eye, EyeOff, LogIn, Shield, Lock } from 'lucide-react';
+import type { User } from '../types';
+
+const DEMO_ACCOUNTS: (User & { password: string })[] = [
+  { id: 'demo-admin-001', name: 'Admin User', email: 'admin@blcts.ke', password: 'admin123', role: 'Administrator', organization: 'BLCTS HQ' },
+  { id: 'demo-owner-001', name: 'James Kariuki', email: 'owner@blcts.ke', password: 'owner123', role: 'Building Owner', organization: 'Nairobi Properties Ltd' },
+  { id: 'demo-fm-001', name: 'Grace Wanjiku', email: 'fm@blcts.ke', password: 'fm123', role: 'Facility Manager', organization: 'FM Services Kenya' },
+];
+
+const ROLE_STYLES: Record<string, { border: string; badge: string; dot: string }> = {
+  Administrator: {
+    border: 'border-violet-200 dark:border-violet-800/50 hover:border-violet-300 dark:hover:border-violet-700',
+    badge: 'bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300',
+    dot: 'bg-violet-500',
+  },
+  'Building Owner': {
+    border: 'border-blue-200 dark:border-blue-800/50 hover:border-blue-300 dark:hover:border-blue-700',
+    badge: 'bg-blue-100 text-emerald-700 dark:bg-blue-950/40 dark:text-blue-300',
+    dot: 'bg-blue-500',
+  },
+  'Facility Manager': {
+    border: 'border-emerald-200 dark:border-emerald-800/50 hover:border-emerald-300 dark:hover:border-emerald-700',
+    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
+    dot: 'bg-emerald-500',
+  },
+};
+
+interface Props {
+  onLogin: (user: User) => void;
+>>>>>>> e32241b59a56f90f714875afe8c4a1450d219a81
 }
 
-export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenProps) {
-  const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<"Developer" | "Facility Manager">("Developer");
-  const [organization, setOrganization] = useState("Wandera Investments Ltd");
-  
+export function AuthScreen({ onLogin }: Props) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+<<<<<<< HEAD
   const [error, setError] = useState<string | null>(null);
   
   // Simulation states
@@ -175,157 +203,98 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
     } catch (err) {
       setError("System encryption error during registration.");
     }
+=======
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    setTimeout(() => {
+      const match = DEMO_ACCOUNTS.find(
+        a => a.email.toLowerCase() === email.trim().toLowerCase() && a.password === password
+      );
+      if (!match) {
+        setError('Invalid email or password.');
+        setLoading(false);
+        return;
+      }
+      const user: User = { id: match.id, name: match.name, email: match.email, role: match.role, organization: match.organization };
+      localStorage.setItem('blcts_user', JSON.stringify(user));
+      onLogin(user);
+      setLoading(false);
+    }, 400);
+>>>>>>> e32241b59a56f90f714875afe8c4a1450d219a81
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-200 ${
-      isDarkMode ? "bg-slate-950 text-slate-105" : "bg-slate-50 text-slate-900"
-    }`}>
-      {/* Dynamic Background visual ornaments */}
-      <div className="absolute top-[-25%] left-[-15%] w-[60%] h-[70%] rounded-full bg-gradient-to-br from-emerald-500/10 to-transparent blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[60%] rounded-full bg-gradient-to-tr from-sky-500/10 to-transparent blur-[125px] pointer-events-none" />
-      <div className="absolute -inset-0 bg-[linear-gradient(to_right,#1e293b0e_1px,transparent_1px),linear-gradient(to_bottom,#1e293b0e_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#0f172a55_1px,transparent_1px),linear-gradient(to_bottom,#0f172a55_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] pointer-events-none" />
+    <div className="min-h-screen flex items-center justify-center bg-[#0a0f1e] p-4 relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.04)_1px,transparent_1px)] bg-[size:48px_48px]" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-emerald-500/6 rounded-full blur-[120px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[200px] bg-blue-500/5 rounded-full blur-[80px]" />
+      </div>
 
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
-        
-        {/* Left Side: Brand presentation card */}
-        <div className="lg:col-span-5 space-y-6 text-left hidden lg:block">
-          <div className="flex items-center gap-3">
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-400 p-3 rounded-2xl border border-emerald-400/20 shadow-lg text-slate-950">
-              <Building2 className="w-7 h-7" />
+      <div className="relative w-full max-w-md animate-fade-in">
+        {/* Brand */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="relative mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-xl shadow-emerald-600/30">
+              <Building2 className="w-7 h-7 text-white" strokeWidth={2} />
             </div>
-            <div>
-              <span className="text-[10px] uppercase font-black text-emerald-500 tracking-widest block font-display">
-                Enterprise Suite
-              </span>
-              <h1 className="text-xl font-black text-slate-950 dark:text-white font-display tracking-tight leading-none mt-1">
-                BLCTS PORTAL
-              </h1>
-            </div>
+            <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#0a0f1e] animate-pulse" />
           </div>
-
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white font-display tracking-tight leading-snug">
-              Maximize Asset Integrity, Eliminate First-Cost Bias
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-light">
-              Nairobi&apos;s leading platform optimizing commercial building structures. Forecast 25-Year cumulative material wear, track active solar utility yields, and streamline mobile contractor payouts securely.
-            </p>
-          </div>
-
-          {/* Core Feature bullet outline */}
-          <div className="space-y-3 pt-3 border-t border-slate-200/60 dark:border-slate-800">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 bg-emerald-500/10 text-emerald-400 p-1 rounded-lg border border-emerald-500/10 shrink-0">
-                <Cpu className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider font-display">
-                  Live IoT Telemetry Loop
-                </h4>
-                <p className="text-[11px] text-slate-450 dark:text-slate-500 mt-0.5 leading-snug">
-                  Continuously streams temperature, power factor, pressure anomalies, and vibration offsets.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 bg-sky-500/10 text-sky-400 p-1 rounded-lg border border-sky-500/10 shrink-0">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider font-display">
-                  TCO Forecast Engine
-                </h4>
-                <p className="text-[11px] text-slate-450 dark:text-slate-500 mt-0.5 leading-snug">
-                  Visualizes actual cumulative outlays across a 30-year operational horizon in beautiful charts.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 bg-amber-500/10 text-amber-500 p-1 rounded-lg border border-amber-500/10 shrink-0">
-                <KeyRound className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider font-display">
-                  Safaricom Daraja API Sync
-                </h4>
-                <p className="text-[11px] text-slate-450 dark:text-slate-500 mt-0.5 leading-snug">
-                  Execute instant contractor M-Pesa payouts directly inside the maintenance log hub.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick-select profiles banner info */}
-          <div className="p-3 bg-slate-100 dark:bg-slate-900/60 border border-slate-200/40 dark:border-slate-800/80 rounded-2xl flex items-center gap-2 text-xs">
-            <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span className="text-slate-550 dark:text-slate-400 leading-normal">
-              Need a test login? Select one of the quick validation credentials on the right pane to pre-fill accounts effortlessly.
-            </span>
-          </div>
+          <h1 className="text-2xl font-black text-white tracking-tight">BLCTS</h1>
+          <p className="text-xs text-slate-500 tracking-widest uppercase mt-1">Building Lifecycle Cost Intelligence</p>
         </div>
 
-        {/* Right Side: Responsive Auth Card panel */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl shadow-[0_15px_60px_-15px_rgba(0,0,0,0.1)] p-6 sm:p-8 relative">
-          
-          {/* Logo flag for mobile */}
-          <div className="lg:hidden flex items-center justify-center gap-2 mb-6">
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-400 p-2 rounded-xl text-slate-950">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <span className="font-extrabold text-sm font-display uppercase tracking-widest text-slate-900 dark:text-white">
-              BLCTS Portal
-            </span>
+        {/* Form card */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-8">
+          <div className="mb-6">
+            <h2 className="text-lg font-bold text-white mb-1">Sign in to your account</h2>
+            <p className="text-sm text-slate-400">Use your credentials or select a demo account below</p>
           </div>
 
-          <AnimatePresence mode="wait">
-            {authStatus === "idle" ? (
-              <motion.div
-                key="auth-form-content"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-6"
-              >
-                {/* Form Navigation Tabs */}
-                <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl font-bold">
-                  <button
-                    onClick={() => { setActiveTab("login"); setError(null); }}
-                    className={`flex-1 py-2 text-xs rounded-lg transition-all cursor-pointer ${
-                      activeTab === "login"
-                        ? "bg-white dark:bg-slate-800 text-slate-950 dark:text-emerald-400 shadow-sm"
-                        : "text-slate-500 hover:text-slate-850 dark:text-slate-400 dark:hover:text-slate-200"
-                    }`}
-                  >
-                    Log In
-                  </button>
-                  <button
-                    onClick={() => { setActiveTab("signup"); setError(null); }}
-                    className={`flex-1 py-2 text-xs rounded-lg transition-all cursor-pointer ${
-                      activeTab === "signup"
-                        ? "bg-white dark:bg-slate-800 text-slate-950 dark:text-emerald-400 shadow-sm"
-                        : "text-slate-500 hover:text-slate-850 dark:text-slate-400 dark:hover:text-slate-200"
-                    }`}
-                  >
-                    Register Account
-                  </button>
-                </div>
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            {/* Email */}
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">
+                Email address
+              </label>
+              <input
+                id="email" type="email" autoComplete="email" required
+                value={email}
+                onChange={e => { setEmail(e.target.value); setError(''); }}
+                placeholder="you@example.com"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-white/12 bg-white/6 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+              />
+            </div>
 
-                <div className="text-center">
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-950 dark:text-white tracking-tight font-display">
-                    {activeTab === "login" ? "Welcome Back to BLCTS" : "Create Enterprise Account"}
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-light">
-                    {activeTab === "login" 
-                      ? "Sign in to review asset durability metrics and invoice registers" 
-                      : "Register to manage municipalities structure catalogs and logs"
-                    }
-                  </p>
-                </div>
+            {/* Password */}
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password" type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password" required
+                  value={password}
+                  onChange={e => { setPassword(e.target.value); setError(''); }}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-white/12 bg-white/6 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                />
+                <button type="button" onClick={() => setShowPassword(p => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
+                  tabIndex={-1}>
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
 
+<<<<<<< HEAD
                 {error && (
                   <div className="p-3 bg-red-50 dark:bg-rose-950/20 border border-red-200 dark:border-rose-900/40 text-red-800 dark:text-rose-350 rounded-xl text-xs font-semibold flex items-center gap-2 animate-bounce">
                     <span className="shrink-0">•</span>
@@ -511,9 +480,61 @@ export default function AuthScreen({ onLoginSuccess, isDarkMode }: AuthScreenPro
                   />
                 </div>
               </motion.div>
+=======
+            {/* Error */}
+            {error && (
+              <div className="flex items-start gap-2 text-sm text-rose-400 bg-rose-950/30 border border-rose-800/50 rounded-xl px-3.5 py-2.5">
+                <span className="mt-0.5 flex-shrink-0">⚠</span>
+                <span>{error}</span>
+              </div>
+>>>>>>> e32241b59a56f90f714875afe8c4a1450d219a81
             )}
-          </AnimatePresence>
 
+            {/* Submit */}
+            <button type="submit"
+              disabled={loading || !email || !password}
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/40 disabled:cursor-not-allowed text-white font-bold text-sm transition-all shadow-lg shadow-emerald-600/25 hover:-translate-y-px"
+            >
+              {loading
+                ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                : <LogIn className="w-4 h-4" />}
+              {loading ? 'Signing in…' : 'Sign In'}
+            </button>
+          </form>
+        </div>
+
+        {/* Demo accounts */}
+        <div className="mt-6">
+          <p className="text-center text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
+            Demo Accounts — Click to autofill
+          </p>
+          <div className="grid grid-cols-3 gap-2.5">
+            {DEMO_ACCOUNTS.map(account => {
+              const styles = ROLE_STYLES[account.role];
+              return (
+                <button key={account.id} type="button"
+                  onClick={() => { setEmail(account.email); setPassword(account.password); setError(''); }}
+                  className={`group relative flex flex-col items-start gap-2 p-3 rounded-xl bg-white/4 border ${styles.border} transition-all hover:bg-white/6 text-left`}
+                >
+                  <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${styles.dot}`} />
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${styles.badge}`}>
+                    {account.role === 'Administrator' ? 'Admin' : account.role === 'Building Owner' ? 'Owner' : 'FM'}
+                  </span>
+                  <div className="w-full">
+                    <p className="text-[10px] font-semibold text-slate-300 truncate group-hover:text-white transition">{account.email}</p>
+                    <p className="text-[9px] text-slate-500 font-mono mt-0.5 tracking-wide">{account.password}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-5 flex items-center gap-2 justify-center">
+            <Lock className="w-3 h-3 text-slate-600" />
+            <p className="text-[10px] text-slate-600 text-center">
+              New accounts are created by the Administrator · Admin registration is disabled
+            </p>
+          </div>
         </div>
       </div>
     </div>
