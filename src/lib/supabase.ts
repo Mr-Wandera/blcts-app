@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+﻿import { createClient } from '@supabase/supabase-js';
 import type { RegionalPricingRow, MaterialRow, ConstructionMaterialRow, BOQEstimate, BOQLineItem, MaintenanceTask } from '../types';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string;
@@ -6,7 +6,7 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 export const supabase = createClient(url, key);
 
-// ─── Re-export types for components that import from here ────────────────────
+// ΓöÇΓöÇΓöÇ Re-export types for components that import from here ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 export type { RegionalPricingRow, MaterialRow, ConstructionMaterialRow, BOQLineItem };
 
 // Legacy BOQ row type for CostEstimation component
@@ -40,7 +40,7 @@ export interface BOQEstimateRow {
   created_at?: string;
 }
 
-// ─── Cache ────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Cache ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 let _pricing: RegionalPricingRow[] | null = null;
 let _materials: MaterialRow[] | null = null;
 let _constructionMaterials: ConstructionMaterialRow[] | null = null;
@@ -83,7 +83,7 @@ export async function updateMaterialPrice(id: string, unitPrice: number): Promis
   return !error;
 }
 
-// ─── BOQ Estimates ────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ BOQ Estimates ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 export async function saveBOQ(estimate: Omit<BOQEstimate, 'id' | 'createdAt'>): Promise<string | null> {
   const { data, error } = await supabase.from('boq_estimates').insert({
     property_id: estimate.projectId,
@@ -165,7 +165,7 @@ export async function getBOQEstimatesForProperty(propertyId: string): Promise<BO
   return fetchBOQHistory(propertyId);
 }
 
-// ─── Maintenance Tasks ────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Maintenance Tasks ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 export async function fetchTasks(projectId?: string): Promise<MaintenanceTask[]> {
   let q = supabase.from('maintenance_tasks').select('*').order('created_at', { ascending: false });
   if (projectId) q = q.eq('property_id', projectId);

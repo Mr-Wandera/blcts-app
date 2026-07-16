@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Mr-Wandera/blcts-app/backend/config"
+	"github.com/Mr-Wandera/blcts-app/backend/handlers"
+	customMiddleware "github.com/Mr-Wandera/blcts-app/backend/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"blcts-backend/config"
-	"blcts-backend/handlers"
-	customMiddleware "blcts-backend/middleware"
 )
 
 // DBAdapter bridges any structural type mismatch between config pool signatures and handlers interfaces

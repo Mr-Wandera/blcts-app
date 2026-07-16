@@ -109,7 +109,7 @@ function App() {
   // Always pick the explicitly selected project first, fallback to first project
   const selectedProject = projects.find(p => p.id === selectedProjectId) ?? projects[0] ?? null;
 
-  // ── Landing page ───────────────────────────────────────────────────────────
+  // ΓöÇΓöÇ Landing page ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (showLanding) {
     return (
       <Suspense fallback={<Loading message="Loading…" />}>
@@ -123,12 +123,12 @@ function App() {
     );
   }
 
-  // ── Auth screen ────────────────────────────────────────────────────────────
+  // ΓöÇΓöÇ Auth screen ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (!user) {
     return <AuthScreen onLogin={handleLogin} />;
   }
 
-  // ── Enforce role-based tab access ──────────────────────────────────────────
+  // ΓöÇΓöÇ Enforce role-based tab access ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const ADMIN_ONLY_TABS: Tab[] = ['users', 'prices', 'regions', 'system'];
   const OWNER_ONLY_TABS: Tab[] = ['blueprint', 'estimation'];
   const FM_ONLY_TABS: Tab[] = ['maintenance'];
@@ -140,12 +140,12 @@ function App() {
     return true;
   }
 
-  // ── No-project fallback ────────────────────────────────────────────────────
+  // ΓöÇΓöÇ No-project fallback ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   function NoProjectSelected({ tab }: { tab: string }) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-[#0f1629] flex items-center justify-center mb-4">
-          <span className="text-3xl">🏗️</span>
+          <span className="text-3xl">≡ƒÅù∩╕Å</span>
         </div>
         <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">No project selected</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-xs">
@@ -270,7 +270,7 @@ function App() {
   );
 }
 
-// ─── User Management Page ─────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ User Management Page ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function UserManagementPage() {
   const DEMO_USERS = [
@@ -329,7 +329,7 @@ function UserManagementPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{u.name}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{u.email} · {u.organization}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{u.email} ┬╖ {u.organization}</p>
               </div>
               <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${roleColors[u.role]}`}>
                 {u.role}
@@ -373,9 +373,9 @@ function UserManagementPage() {
               ].map(([label, admin, owner, fm]) => (
                 <tr key={String(label)} className="border-b border-slate-100 dark:border-white/6 last:border-0">
                   <td className="py-2 text-slate-700 dark:text-slate-300">{String(label)}</td>
-                  <td className="py-2 text-center">{admin ? '✅' : '—'}</td>
-                  <td className="py-2 text-center">{owner ? '✅' : '—'}</td>
-                  <td className="py-2 text-center">{fm ? '✅' : '—'}</td>
+                  <td className="py-2 text-center">{admin ? 'Γ£à' : 'ΓÇö'}</td>
+                  <td className="py-2 text-center">{owner ? 'Γ£à' : 'ΓÇö'}</td>
+                  <td className="py-2 text-center">{fm ? 'Γ£à' : 'ΓÇö'}</td>
                 </tr>
               ))}
             </tbody>
@@ -392,7 +392,7 @@ function UserManagementPage() {
   );
 }
 
-// ─── System Settings Page ─────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ System Settings Page ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function SystemSettingsPage() {
   const systemItems = [
@@ -400,7 +400,7 @@ function SystemSettingsPage() {
     { label: 'AI Engine', value: 'Gemini 2.5 Flash', status: 'Configured', color: 'blue' },
     { label: 'Regional Pricing', value: '10 Counties loaded', status: 'Live', color: 'green' },
     { label: 'Materials Database', value: '44 items', status: 'Synced', color: 'green' },
-    { label: 'BOQ Engine', value: 'v2.0 — QS Standard', status: 'Ready', color: 'green' },
+    { label: 'BOQ Engine', value: 'v2.0 ΓÇö QS Standard', status: 'Ready', color: 'green' },
     { label: 'Lifecycle Model', value: '30-year, 6% inflation', status: 'Active', color: 'green' },
     { label: 'BOQ Estimates', value: 'Persisted to Supabase', status: 'Active', color: 'green' },
     { label: 'Maintenance Tasks', value: 'Persisted to Supabase', status: 'Active', color: 'green' },
@@ -438,10 +438,10 @@ function SystemSettingsPage() {
         <div className="p-5 space-y-3">
           {[
             ['Application', 'Building Lifecycle Cost Tracking System (BLCTS)'],
-            ['Version', '2.0.0 — Presentation Build'],
+            ['Version', '2.0.0 ΓÇö Presentation Build'],
             ['Frontend', 'React 19 + TypeScript + Vite + Tailwind CSS 4'],
             ['Backend', 'Supabase (PostgreSQL + Row Level Security)'],
-            ['AI Integration', 'Google Gemini 2.5 Flash — Blueprint Analysis'],
+            ['AI Integration', 'Google Gemini 2.5 Flash ΓÇö Blueprint Analysis'],
             ['BOQ Standard', 'Kenya NCA / BORAQS Quantity Survey Standard'],
             ['Lifecycle Model', 'Discounted cost-over-time with 6% annual inflation'],
             ['Currency', 'Kenya Shilling (KSh)'],
@@ -463,13 +463,13 @@ function SystemSettingsPage() {
           {[
             { time: new Date().toLocaleString(), action: 'Session started', user: 'Administrator', type: 'auth' },
             { time: new Date(Date.now() - 3600000).toLocaleString(), action: 'Material price database viewed', user: 'Administrator', type: 'data' },
-            { time: new Date(Date.now() - 7200000).toLocaleString(), action: 'Regional pricing updated — Nairobi', user: 'Administrator', type: 'update' },
+            { time: new Date(Date.now() - 7200000).toLocaleString(), action: 'Regional pricing updated ΓÇö Nairobi', user: 'Administrator', type: 'update' },
           ].map((log, i) => (
             <div key={i} className="flex items-center gap-3 px-5 py-3">
               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${log.type === 'auth' ? 'bg-blue-400' : log.type === 'update' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-slate-700 dark:text-slate-300">{log.action}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{log.user} · {log.time}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{log.user} ┬╖ {log.time}</p>
               </div>
             </div>
           ))}

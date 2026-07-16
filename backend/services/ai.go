@@ -5,8 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"blcts-backend/models"
-
+	"github.com/Mr-Wandera/blcts-app/backend/models"
 	"github.com/google/uuid"
 )
 

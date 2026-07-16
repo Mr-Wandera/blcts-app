@@ -1,14 +1,13 @@
 package middleware
 
-import "os"
-
 import (
 	"context"
 	"net/http"
+	"os"
 	"strings"
 
+	"github.com/Mr-Wandera/blcts-app/backend/handlers"
 	"github.com/golang-jwt/jwt/v5"
-	"blcts-backend/handlers"
 )
 
 type contextKey string

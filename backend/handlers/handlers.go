@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Mr-Wandera/blcts-app/backend/models"
+	"github.com/Mr-Wandera/blcts-app/backend/services"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"blcts-backend/models"
-	"blcts-backend/services"
 )
 
 // DBConnectionPool interfaces standard operations for PostgreSQL

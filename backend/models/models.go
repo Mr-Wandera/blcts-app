@@ -6,11 +6,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// CostEntry represents a single cost record in the ledger system
+// CostEntry records a single capex/opex/maintenance ledger transaction for a building
 type CostEntry struct {
 	ID          uuid.UUID `json:"id"`
 	BuildingID  uuid.UUID `json:"building_id"`
-	Phase       string    `json:"phase"` // capex, opex, maintenance, end-of-life
+	Phase       string    `json:"phase"`
 	Category    string    `json:"category"`
 	Amount      float64   `json:"amount"`
 	Description string    `json:"description"`
@@ -19,7 +19,7 @@ type CostEntry struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-// ChartDataPoint represents a single data point for chart rendering
+// ChartDataPoint represents one month's budget-vs-actual figures for Recharts/Chart.js
 type ChartDataPoint struct {
 	Month       string  `json:"month"`
 	CapexBudget float64 `json:"capex_budget"`
