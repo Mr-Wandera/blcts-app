@@ -120,7 +120,7 @@ function BOQTable({ estimate, showAll }: { estimate: BOQEstimate; showAll: boole
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-700/40">
           {rows.map((li, i) => (
-            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/3 transition-colors">
+            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-white/3 transition-colors">
               <td className="py-2.5 px-4 text-sm text-slate-800 dark:text-slate-100">{li.section}</td>
               <td className="py-2.5 px-4 text-sm text-right tabular-nums text-slate-600 dark:text-slate-300">{li.quantity.toFixed(2)}</td>
               <td className="py-2.5 px-4 text-xs text-slate-500 dark:text-slate-400">{li.unit}</td>
@@ -326,14 +326,14 @@ export default function ReportsPage({ project, onGoToEstimation }: Props) {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => downloadCSV(currentEstimate)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/6 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 dark:border-white/12 bg-white dark:bg-[#0f1629] text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/6 transition-colors"
             >
               <Download className="w-4 h-4" />
               Export CSV
             </button>
             <button
               onClick={() => window.print()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-md shadow-emerald-600/20-sm transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-md shadow-emerald-600/20 transition-colors"
             >
               <Printer className="w-4 h-4" />
               Print Report
@@ -381,7 +381,7 @@ export default function ReportsPage({ project, onGoToEstimation }: Props) {
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                       selectedId === est.id
                         ? 'bg-emerald-600 text-white'
-                        : 'bg-white dark:bg-[#0f1629] border border-slate-300 dark:border-white/12 dark:border-white/12 text-slate-600 dark:text-slate-300 hover:border-blue-400 dark:hover:border-emerald-600'
+                        : 'bg-white dark:bg-[#0f1629] border border-slate-300 dark:border-white/12 text-slate-600 dark:text-slate-300 hover:border-blue-400 dark:hover:border-emerald-600'
                     }`}
                   >
                     <Calendar className="inline w-3 h-3 mr-1 align-middle" />
@@ -436,7 +436,7 @@ export default function ReportsPage({ project, onGoToEstimation }: Props) {
               <div className="flex items-center justify-center gap-4 py-4">
                 <button
                   onClick={() => downloadCSV(currentEstimate)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/6 shadow-sm transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 dark:border-white/12 bg-white dark:bg-[#0f1629] text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/6 shadow-sm transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   Export Full CSV

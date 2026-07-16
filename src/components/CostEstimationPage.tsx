@@ -9,6 +9,7 @@ import { fetchRegionalPricing, saveBOQ, fetchBOQHistory } from '../lib/supabase'
 import { fmtKSh, fmtKShFull, fmtPct } from '../lib/format';
 import { StepBar } from './ui/StepBar';
 import { Badge } from './ui/Badge';
+import { Input, Select } from './ui/Input';
 import type {
   Project, BOQEstimate, RegionalPricingRow, BuildingType, ConstructionStandard,
 } from '../types';
@@ -234,7 +235,7 @@ export default function CostEstimationPage({ project, onGoToBlueprint, onProject
             <div className="flex items-center gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-amber-800">No blueprint uploaded</p>
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">No blueprint uploaded</p>
                 <p className="text-xs text-amber-600 mt-0.5">Upload a blueprint for AI-assisted analysis. You can still run a manual estimate below.</p>
               </div>
             </div>
@@ -289,14 +290,14 @@ function BlueprintAnalysisBanner({ analysis }: { analysis: NonNullable<Project['
   const isFallback = analysis.isFallback;
 
   return (
-    <div className={`rounded-xl border p-4 ${isFallback ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
+    <div className={`rounded-xl border p-4 ${isFallback ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/50' : 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50'}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           {isFallback
             ? <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
             : <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />}
           <div>
-            <p className={`text-sm font-semibold ${isFallback ? 'text-amber-800' : 'text-emerald-800'}`}>
+            <p className={`text-sm font-semibold ${isFallback ? 'text-amber-800 dark:text-amber-400' : 'text-emerald-800 dark:text-emerald-400'}`}>
               {isFallback ? 'AI analysis unavailable — using manual values' : 'Blueprint analyzed successfully'}
             </p>
             {conf !== null && !isFallback && (
@@ -314,7 +315,7 @@ function BlueprintAnalysisBanner({ analysis }: { analysis: NonNullable<Project['
         </div>
         <button
           onClick={() => setExpanded((v) => !v)}
-          className={`text-xs font-medium flex items-center gap-1 ${isFallback ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'}`}
+          className={`text-xs font-medium flex items-center gap-1 ${isFallback ? 'text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300' : 'text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300'}`}
         >
           {expanded ? 'Hide' : 'Details'}
           {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -325,10 +326,10 @@ function BlueprintAnalysisBanner({ analysis }: { analysis: NonNullable<Project['
         <div className="mt-4 space-y-4">
           {analysis.observations.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Observations</p>
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Observations</p>
               <ul className="space-y-1">
                 {analysis.observations.map((obs, i) => (
-                  <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
+                  <li key={i} className="text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
                     <span className="w-1 h-1 rounded-full bg-slate-400 mt-1.5 flex-shrink-0" />
                     {obs}
                   </li>
@@ -349,7 +350,7 @@ function BlueprintAnalysisBanner({ analysis }: { analysis: NonNullable<Project['
             ].map(({ label, value }) => (
               <div key={label} className="bg-white/60 dark:bg-white/10 rounded-xl p-2.5 border border-white/20">
                 <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{label}</p>
-                <p className={`text-xs mt-0.5 font-medium ${value ? 'text-slate-800' : 'text-slate-400 italic'}`}>
+                <p className={`text-xs mt-0.5 font-medium ${value ? 'text-slate-800 dark:text-white' : 'text-slate-400 italic'}`}>
                   {value ?? 'Unable to determine'}
                 </p>
               </div>
@@ -376,8 +377,7 @@ interface ParamPanelProps {
 }
 
 function ParametersPanel(p: ParamPanelProps) {
-  const inputCls = 'w-full rounded-xl border border-slate-200 dark:border-white/12 bg-slate-50 dark:bg-white/4 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition disabled:opacity-50 disabled:cursor-not-allowed';
-  const labelCls = 'block text-xs font-semibold text-slate-600 mb-1';
+
 
   return (
     <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 shadow-sm p-5">
@@ -387,36 +387,22 @@ function ParametersPanel(p: ParamPanelProps) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-        {/* County */}
-        <div>
-          <label className={labelCls}>County</label>
-          <select className={inputCls} value={p.county} onChange={(e) => p.setCounty(e.target.value)} disabled={p.running}>
-            {KENYA_COUNTIES.map((c) => <option key={c}>{c}</option>)}
-          </select>
-        </div>
-
-        {/* Building Type */}
-        <div>
-          <label className={labelCls}>Building Type</label>
-          <select className={inputCls} value={p.buildingType} onChange={(e) => p.setBuildingType(e.target.value)} disabled={p.running}>
-            {BUILDING_TYPES.map((t) => <option key={t}>{t}</option>)}
-          </select>
-        </div>
-
-        {/* Construction Standard */}
-        <div>
-          <label className={labelCls}>Construction Standard</label>
-          <select className={inputCls} value={p.standard} onChange={(e) => p.setStandard(e.target.value)} disabled={p.running}>
-            {STANDARDS.map((s) => <option key={s}>{s}</option>)}
-          </select>
-        </div>
+        <Select label="County" value={p.county} onChange={(e) => p.setCounty(e.target.value)} disabled={p.running}>
+          {KENYA_COUNTIES.map((c) => <option key={c}>{c}</option>)}
+        </Select>
+        <Select label="Building Type" value={p.buildingType} onChange={(e) => p.setBuildingType(e.target.value)} disabled={p.running}>
+          {BUILDING_TYPES.map((t) => <option key={t}>{t}</option>)}
+        </Select>
+        <Select label="Construction Standard" value={p.standard} onChange={(e) => p.setStandard(e.target.value)} disabled={p.running}>
+          {STANDARDS.map((s) => <option key={s}>{s}</option>)}
+        </Select>
       </div>
 
       {/* GFA Section */}
       <div className="bg-slate-50 dark:bg-white/4 rounded-xl p-4 mb-4 border border-slate-200 dark:border-white/8">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Gross Floor Area</p>
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Gross Floor Area</p>
             <p className="text-2xl font-bold text-slate-800 dark:text-white mt-0.5">
               {p.gfa.toLocaleString()} <span className="text-sm font-normal text-slate-500">m²</span>
             </p>
@@ -425,7 +411,7 @@ function ParametersPanel(p: ParamPanelProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600 dark:text-slate-400">
               <input
                 type="checkbox"
                 checked={p.overrideGFA}
@@ -438,25 +424,24 @@ function ParametersPanel(p: ParamPanelProps) {
           </div>
         </div>
         {p.overrideGFA && (
-          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200">
-            <div>
-              <label className={labelCls}>Floor Area Per Floor (m²)</label>
-              <input
-                type="number" min={10} className={inputCls}
-                value={p.customFloorArea}
-                onChange={(e) => p.setCustomFloorArea(e.target.value)}
-                disabled={p.running}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Number of Floors</label>
-              <input
-                type="number" min={1} max={50} className={inputCls}
-                value={p.customFloors}
-                onChange={(e) => p.setCustomFloors(e.target.value)}
-                disabled={p.running}
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200 dark:border-white/6">
+            <Input
+              label="Floor Area Per Floor (m²)"
+              type="number"
+              min={10}
+              value={p.customFloorArea}
+              onChange={(e) => p.setCustomFloorArea(e.target.value)}
+              disabled={p.running}
+            />
+            <Input
+              label="Number of Floors"
+              type="number"
+              min={1}
+              max={50}
+              value={p.customFloors}
+              onChange={(e) => p.setCustomFloors(e.target.value)}
+              disabled={p.running}
+            />
           </div>
         )}
       </div>
@@ -464,7 +449,7 @@ function ParametersPanel(p: ParamPanelProps) {
       {/* Run button / loading */}
       {p.running ? (
         <div className="space-y-3">
-          <div className="flex items-center gap-3 text-sm text-slate-600">
+          <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
             <Loader2 className="w-4 h-4 animate-spin text-emerald-600 flex-shrink-0" />
             <span className="font-medium">{CALC_MESSAGES[p.calcStep] ?? 'Finalising…'}</span>
           </div>
@@ -525,7 +510,7 @@ function ResultsSection({ estimate, activeTab, setActiveTab, project, onExportCS
             className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
               activeTab === t.key
                 ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/10'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/4'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/4'
             }`}
           >
             {t.icon}
@@ -559,22 +544,22 @@ function SummaryTab({ estimate }: { estimate: BOQEstimate }) {
       label: 'Cost per m²',
       value: fmtKSh(estimate.costPerSqm),
       sub: `${estimate.constructionStandard} standard`,
-      icon: <DollarSign className="w-5 h-5 text-purple-500" />,
-      bg: 'bg-purple-50',
+      icon: <DollarSign className="w-5 h-5 text-purple-500 dark:text-purple-400" />,
+      bg: 'bg-purple-50 dark:bg-purple-950/30',
     },
     {
       label: 'Total Project Cost',
       value: fmtKSh(estimate.totalProjectCost),
       sub: 'inc. VAT, fees & contingency',
-      icon: <Building2 className="w-5 h-5 text-emerald-500" />,
-      bg: 'bg-emerald-50',
+      icon: <Building2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />,
+      bg: 'bg-emerald-50 dark:bg-emerald-950/30',
     },
     {
       label: `${estimate.lifecycleYears}-Year TCO`,
       value: fmtKSh(estimate.tco),
       sub: `+ KSh ${fmtKSh(estimate.annualOpex)}/yr OPEX`,
-      icon: <Clock className="w-5 h-5 text-amber-500" />,
-      bg: 'bg-amber-50',
+      icon: <Clock className="w-5 h-5 text-amber-500 dark:text-amber-400" />,
+      bg: 'bg-amber-50 dark:bg-amber-950/30',
     },
   ];
 
@@ -658,7 +643,7 @@ function SummaryTab({ estimate }: { estimate: BOQEstimate }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((k) => (
           <div key={k.label} className={`${k.bg} rounded-xl p-4 border border-white`}>
-            <div className="flex items-center gap-2 mb-2">{k.icon}<p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">{k.label}</p></div>
+            <div className="flex items-center gap-2 mb-2">{k.icon}<p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">{k.label}</p></div>
             <p className="text-xl font-bold text-slate-800 dark:text-white leading-tight">{k.value}</p>
             <p className="text-xs text-slate-500 mt-0.5">{k.sub}</p>
           </div>
@@ -682,22 +667,22 @@ function SummaryTab({ estimate }: { estimate: BOQEstimate }) {
               {breakdownRows.map((row, i) => (
                 <tr
                   key={i}
-                  className={`border-b border-slate-100 ${
+                  className={`border-b border-slate-100 dark:border-white/6 ${
                     row.highlight
                       ? 'bg-blue-50 dark:bg-blue-950/30'
                       : row.bold
                       ? 'bg-slate-50'
-                      : 'hover:bg-slate-50/50'
+                      : 'hover:bg-slate-50/50 dark:hover:bg-white/3'
                   }`}
                 >
-                  <td className={`py-2.5 px-4 ${row.indent ? 'pl-8' : ''} ${row.bold ? 'font-bold text-slate-800' : 'text-slate-700'} ${row.highlight ? 'text-emerald-800 font-bold' : ''}`}>
+                  <td className={`py-2.5 px-4 ${row.indent ? 'pl-8' : ''} ${row.bold ? 'font-bold text-slate-800 dark:text-white' : 'text-slate-700 dark:text-slate-300'} ${row.highlight ? 'text-emerald-800 dark:text-emerald-400 font-bold' : ''}`}>
                     {row.label}
                   </td>
                   <td className="py-2.5 px-4 text-xs text-slate-400 italic">{row.formula ?? ''}</td>
                   <td className="py-2.5 px-4 text-right text-xs text-slate-500">
                     {row.pct != null ? fmtPct(row.pct) : ''}
                   </td>
-                  <td className={`py-2.5 px-4 text-right font-mono ${row.bold ? 'font-bold text-slate-800' : 'text-slate-700'} ${row.highlight ? 'text-emerald-800 font-bold text-base' : ''}`}>
+                  <td className={`py-2.5 px-4 text-right font-mono ${row.bold ? 'font-bold text-slate-800 dark:text-white' : 'text-slate-700 dark:text-slate-300'} ${row.highlight ? 'text-emerald-800 dark:text-emerald-400 font-bold text-base' : ''}`}>
                     {fmtKShFull(row.amount)}
                   </td>
                 </tr>
@@ -746,12 +731,12 @@ function BOQTab({ estimate, onExportCSV }: { estimate: BOQEstimate; onExportCSV:
           </thead>
           <tbody>
             {estimate.lineItems.map((li, i) => (
-              <tr key={i} className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
+              <tr key={i} className="border-b border-slate-100 dark:border-white/6 dark:border-white/6 hover:bg-slate-50/60 dark:hover:bg-white/3 transition-colors">
                 <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">{li.section}</td>
-                <td className="py-3 px-4 text-right text-slate-600 font-mono">{li.quantity.toLocaleString()}</td>
+                <td className="py-3 px-4 text-right text-slate-600 dark:text-slate-400 font-mono">{li.quantity.toLocaleString()}</td>
                 <td className="py-3 px-4 text-slate-500">{li.unit}</td>
-                <td className="py-3 px-4 text-right font-mono text-slate-600">{fmtKShFull(li.unitRate)}</td>
-                <td className="py-3 px-4 text-right font-mono font-semibold text-slate-800 dark:text-slate-100">{fmtKShFull(li.amount)}</td>
+                <td className="py-3 px-4 text-right font-mono text-slate-600 dark:text-slate-400">{fmtKShFull(li.unitRate)}</td>
+                <td className="py-3 px-4 text-right font-mono font-semibold text-slate-800 dark:text-white dark:text-slate-100">{fmtKShFull(li.amount)}</td>
                 <td className="py-3 px-4 text-right text-xs text-slate-400">
                   {subtotal > 0 ? fmtPct(li.amount / subtotal) : '—'}
                 </td>
@@ -765,8 +750,8 @@ function BOQTab({ estimate, onExportCSV }: { estimate: BOQEstimate; onExportCSV:
           </tbody>
           <tfoot>
             <tr className="bg-slate-50 border-t-2 border-slate-300">
-              <td colSpan={4} className="py-3 px-4 font-bold text-slate-800 dark:text-slate-100">SUBTOTAL</td>
-              <td className="py-3 px-4 text-right font-bold text-slate-800 dark:text-slate-100 font-mono">{fmtKShFull(subtotal)}</td>
+              <td colSpan={4} className="py-3 px-4 font-bold text-slate-800 dark:text-white dark:text-slate-100">SUBTOTAL</td>
+              <td className="py-3 px-4 text-right font-bold text-slate-800 dark:text-white dark:text-slate-100 font-mono">{fmtKShFull(subtotal)}</td>
               <td className="py-3 px-4 text-right text-slate-500">100%</td>
               <td />
             </tr>
@@ -783,9 +768,9 @@ function BOQTab({ estimate, onExportCSV }: { estimate: BOQEstimate; onExportCSV:
 function LifecycleTab({ estimate }: { estimate: BOQEstimate }) {
   const opexBreakdown = [
     { label: 'Maintenance & Repairs', pct: 0.45, icon: <Wrench className="w-4 h-4 text-blue-500 dark:text-blue-400" />, bg: 'bg-blue-50 dark:bg-blue-950/30' },
-    { label: 'Utilities & Energy', pct: 0.30, icon: <Zap className="w-4 h-4 text-amber-500" />, bg: 'bg-amber-50' },
-    { label: 'Insurance & Security', pct: 0.15, icon: <Shield className="w-4 h-4 text-emerald-500" />, bg: 'bg-emerald-50' },
-    { label: 'Inspections & Compliance', pct: 0.10, icon: <CheckCircle2 className="w-4 h-4 text-purple-500" />, bg: 'bg-purple-50' },
+    { label: 'Utilities & Energy', pct: 0.30, icon: <Zap className="w-4 h-4 text-amber-500 dark:text-amber-400" />, bg: 'bg-amber-50 dark:bg-amber-950/30' },
+    { label: 'Insurance & Security', pct: 0.15, icon: <Shield className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />, bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
+    { label: 'Inspections & Compliance', pct: 0.10, icon: <CheckCircle2 className="w-4 h-4 text-purple-500 dark:text-purple-400" />, bg: 'bg-purple-50 dark:bg-purple-950/30' },
   ];
 
   const chartData = estimate.yearlyProjection.map((y) => ({
@@ -811,8 +796,8 @@ function LifecycleTab({ estimate }: { estimate: BOQEstimate }) {
           {opexBreakdown.map((item) => (
             <div key={item.label} className={`${item.bg} rounded-xl p-4 border border-white`}>
               <div className="flex items-center gap-2 mb-2">{item.icon}</div>
-              <p className="text-xs font-semibold text-slate-600 mb-1">{item.label}</p>
-              <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{fmtKSh(estimate.annualOpex * item.pct)}</p>
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">{item.label}</p>
+              <p className="text-lg font-bold text-slate-800 dark:text-white dark:text-slate-100">{fmtKSh(estimate.annualOpex * item.pct)}</p>
               <p className="text-xs text-slate-500">per year ({Math.round(item.pct * 100)}%)</p>
             </div>
           ))}
@@ -876,9 +861,9 @@ function LifecycleTab({ estimate }: { estimate: BOQEstimate }) {
             </thead>
             <tbody>
               {tcoRows.map((row, i) => (
-                <tr key={i} className={`border-b border-slate-100 ${row.highlight ? 'bg-blue-50 dark:bg-blue-950/30' : 'hover:bg-slate-50/50'}`}>
-                  <td className={`py-2.5 px-4 ${row.highlight ? 'font-bold text-emerald-800' : 'text-slate-700'}`}>{row.label}</td>
-                  <td className={`py-2.5 px-4 text-right font-mono ${row.highlight ? 'font-bold text-emerald-800 text-base' : 'text-slate-700'}`}>{fmtKShFull(row.amount)}</td>
+                <tr key={i} className={`border-b border-slate-100 dark:border-white/6 dark:border-white/6 ${row.highlight ? 'bg-blue-50 dark:bg-blue-950/30' : 'hover:bg-slate-50/50 dark:hover:bg-white/3'}`}>
+                  <td className={`py-2.5 px-4 ${row.highlight ? 'font-bold text-emerald-800 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>{row.label}</td>
+                  <td className={`py-2.5 px-4 text-right font-mono ${row.highlight ? 'font-bold text-emerald-800 dark:text-emerald-400 text-base' : 'text-slate-700 dark:text-slate-300'}`}>{fmtKShFull(row.amount)}</td>
                 </tr>
               ))}
             </tbody>
@@ -946,12 +931,12 @@ function ReportTab({ estimate, project }: { estimate: BOQEstimate; project: Proj
 
       {/* Detected parameters */}
       <div className="bg-slate-50 rounded-xl border border-slate-200 p-5">
-        <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Project Parameters</h4>
+        <h4 className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-3">Project Parameters</h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {params.map((p) => (
             <div key={p.label}>
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{p.label}</p>
-              <p className="text-sm font-semibold text-slate-800 mt-0.5">{p.value}</p>
+              <p className="text-sm font-semibold text-slate-800 dark:text-white mt-0.5">{p.value}</p>
             </div>
           ))}
         </div>
@@ -960,7 +945,7 @@ function ReportTab({ estimate, project }: { estimate: BOQEstimate; project: Proj
       {/* AI Confidence */}
       {conf !== null && (
         <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 p-5">
-          <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Blueprint AI Confidence</h4>
+          <h4 className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-3">Blueprint AI Confidence</h4>
           <div className="flex items-center gap-4">
             <div className="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden">
               <div
@@ -968,7 +953,7 @@ function ReportTab({ estimate, project }: { estimate: BOQEstimate; project: Proj
                 style={{ width: `${Math.round(conf * 100)}%` }}
               />
             </div>
-            <span className="text-sm font-bold text-slate-700 w-12 text-right">{Math.round(conf * 100)}%</span>
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-300 w-12 text-right">{Math.round(conf * 100)}%</span>
           </div>
           <p className="text-xs text-slate-400 mt-2">
             {conf >= 0.8 ? 'High confidence — extracted values closely match a real blueprint.'
@@ -981,10 +966,10 @@ function ReportTab({ estimate, project }: { estimate: BOQEstimate; project: Proj
       {/* Observations */}
       {estimate.blueprintObservations.length > 0 && (
         <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 p-5">
-          <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Blueprint Observations</h4>
+          <h4 className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-3">Blueprint Observations</h4>
           <ul className="space-y-2">
             {estimate.blueprintObservations.map((obs, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+              <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                 {obs}
               </li>
@@ -995,10 +980,10 @@ function ReportTab({ estimate, project }: { estimate: BOQEstimate; project: Proj
 
       {/* Assumptions */}
       <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 p-5">
-        <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Assumptions</h4>
+        <h4 className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-3">Assumptions</h4>
         <ul className="space-y-2">
           {assumptions.map((a, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+            <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
               <span className="w-5 h-5 rounded-full bg-blue-100 text-emerald-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
               {a}
             </li>
@@ -1007,14 +992,14 @@ function ReportTab({ estimate, project }: { estimate: BOQEstimate; project: Proj
       </div>
 
       {/* Limitations */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-xl p-5">
         <div className="flex items-center gap-2 mb-3">
           <AlertTriangle className="w-4 h-4 text-amber-500" />
-          <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider">Limitations & Disclaimers</h4>
+          <h4 className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Limitations & Disclaimers</h4>
         </div>
         <ul className="space-y-2">
           {limitations.map((l, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-amber-800">
+            <li key={i} className="flex items-start gap-2 text-sm text-amber-800 dark:text-amber-400">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-2 flex-shrink-0" />
               {l}
             </li>
@@ -1034,11 +1019,11 @@ function HistorySection({ history, loading }: { history: BOQEstimate[]; loading:
     <div className="bg-white dark:bg-[#0f1629] rounded-2xl border border-slate-200 dark:border-white/8 shadow-sm overflow-hidden">
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors"
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 dark:hover:bg-white/3 transition-colors"
       >
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-slate-500" />
-          <span className="text-sm font-bold text-slate-700">Estimate History</span>
+          <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Estimate History</span>
           {!loading && <span className="text-xs text-slate-400">({history.length} saved)</span>}
         </div>
         {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
@@ -1071,8 +1056,8 @@ function HistorySection({ history, loading }: { history: BOQEstimate[]; loading:
                 </thead>
                 <tbody>
                   {history.map((h) => (
-                    <tr key={h.id} className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
-                      <td className="py-2.5 px-4 text-slate-600 whitespace-nowrap">
+                    <tr key={h.id} className="border-b border-slate-100 dark:border-white/6 dark:border-white/6 hover:bg-slate-50/60 dark:hover:bg-white/3 transition-colors">
+                      <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
                         {new Date(h.createdAt).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </td>
                       <td className="py-2.5 px-4">
@@ -1081,9 +1066,9 @@ function HistorySection({ history, loading }: { history: BOQEstimate[]; loading:
                           color={h.constructionStandard === 'Economy' ? 'slate' : h.constructionStandard === 'Standard' ? 'blue' : h.constructionStandard === 'Premium' ? 'purple' : 'amber'}
                         />
                       </td>
-                      <td className="py-2.5 px-4 text-right font-mono text-slate-600">{h.gfa.toLocaleString()}</td>
-                      <td className="py-2.5 px-4 text-right font-mono text-slate-600">{fmtKSh(h.costPerSqm)}</td>
-                      <td className="py-2.5 px-4 text-right font-mono font-semibold text-slate-800 dark:text-slate-100">{fmtKSh(h.totalProjectCost)}</td>
+                      <td className="py-2.5 px-4 text-right font-mono text-slate-600 dark:text-slate-400">{h.gfa.toLocaleString()}</td>
+                      <td className="py-2.5 px-4 text-right font-mono text-slate-600 dark:text-slate-400">{fmtKSh(h.costPerSqm)}</td>
+                      <td className="py-2.5 px-4 text-right font-mono font-semibold text-slate-800 dark:text-white dark:text-slate-100">{fmtKSh(h.totalProjectCost)}</td>
                       <td className="py-2.5 px-4 text-right font-mono text-emerald-700 font-semibold">{fmtKSh(h.tco)}</td>
                     </tr>
                   ))}

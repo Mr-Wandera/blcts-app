@@ -145,7 +145,7 @@ function MaterialsTable({ rows, onPriceUpdate }: MaterialsTableProps) {
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
           {rows.map((row) => (
-            <tr key={row.id} className="group hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/3 transition-colors">
+            <tr key={row.id} className="group hover:bg-slate-50 dark:hover:bg-white/3 transition-colors">
               <td className="py-3 px-4">
                 <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{row.name}</span>
                 {row.notes && (
@@ -206,7 +206,7 @@ function RegionalPanel({ rows }: { rows: RegionalPricingRow[] }) {
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
             {rows.map((row) => (
-              <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/3 transition-colors">
+              <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-white/3 transition-colors">
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
@@ -325,7 +325,7 @@ export default function PricingAdminPage({ onBack, initialTab }: Props) {
         <button
           onClick={() => load(true)}
           disabled={refreshing}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/6 transition-colors disabled:opacity-60"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 dark:border-white/12 bg-white dark:bg-[#0f1629] text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/6 transition-colors disabled:opacity-60"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           {refreshing ? 'Refreshing…' : 'Refresh Prices'}

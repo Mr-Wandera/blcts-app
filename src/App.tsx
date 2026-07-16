@@ -1,15 +1,17 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import type { User, Project, BlueprintAnalysisResult } from './types';
 import { AuthScreen } from './components/AuthScreen';
 import { Layout } from './components/Layout';
-import Dashboard from './components/Dashboard';
-import ProjectsPage from './components/ProjectsPage';
-import BlueprintUpload from './components/BlueprintUpload';
-import CostEstimationPage from './components/CostEstimationPage';
-import MaintenancePage from './components/MaintenancePage';
-import PricingAdminPage from './components/PricingAdminPage';
-import ReportsPage from './components/ReportsPage';
-import LandingPageNew from './components/LandingPageNew';
+import { Loading } from './components/ui/Loading';
+
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const ProjectsPage = lazy(() => import('./components/ProjectsPage'));
+const BlueprintUpload = lazy(() => import('./components/BlueprintUpload'));
+const CostEstimationPage = lazy(() => import('./components/CostEstimationPage'));
+const MaintenancePage = lazy(() => import('./components/MaintenancePage'));
+const PricingAdminPage = lazy(() => import('./components/PricingAdminPage'));
+const ReportsPage = lazy(() => import('./components/ReportsPage'));
+const LandingPageNew = lazy(() => import('./components/LandingPageNew'));
 
 type Tab =
   | 'dashboard' | 'projects' | 'blueprint' | 'estimation'
@@ -110,12 +112,14 @@ function App() {
   // ΓöÇΓöÇ Landing page ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (showLanding) {
     return (
-      <LandingPageNew
-        isDark={isDark}
-        onToggleDark={() => setIsDark(d => !d)}
-        onLogin={() => setShowLanding(false)}
-        onGetStarted={() => setShowLanding(false)}
-      />
+      <Suspense fallback={<Loading message="Loading…" />}>
+        <LandingPageNew
+          isDark={isDark}
+          onToggleDark={() => setIsDark(d => !d)}
+          onLogin={() => setShowLanding(false)}
+          onGetStarted={() => setShowLanding(false)}
+        />
+      </Suspense>
     );
   }
 
@@ -258,7 +262,9 @@ function App() {
       pageTitle={TAB_TITLES[activeTab] || activeTab}
     >
       <div className="animate-fade-in">
-        {renderContent()}
+        <Suspense fallback={<Loading message="Loading module…" />}>
+          {renderContent()}
+        </Suspense>
       </div>
     </Layout>
   );

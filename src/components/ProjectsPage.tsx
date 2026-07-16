@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, MapPin, Building2, Layers, Calculator, FileText, FolderOpen, X, CircleCheck as CheckCircle2, Clock, MoveVertical as MoreVertical, Search } from 'lucide-react';
+import { Plus, MapPin, Building2, Layers, Calculator, FileText, FolderOpen, X, CircleCheck as CheckCircle2, Clock, MoveVertical as MoreVertical, Building } from 'lucide-react';
 import type { User, Project, BuildingType, ConstructionStandard } from '../types';
 import { Badge } from './ui/Badge';
+import { Modal } from './ui/Modal';
+import { SearchBar } from './ui/SearchBar';
+import { Button } from './ui/Button';
+import { Input, Select } from './ui/Input';
 
 const KENYA_COUNTIES = [
   'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret',
@@ -48,8 +52,7 @@ const defaultForm: FormState = {
   status: 'Planning',
 };
 
-const inputCls = 'w-full rounded-xl border border-slate-200 dark:border-white/12 bg-slate-50 dark:bg-white/4 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition';
-const labelCls = 'block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5';
+
 
 const STATUS_COLORS: Record<ProjectStatus, { badge: 'amber' | 'blue' | 'green' | 'slate'; dot: string }> = {
   Planning: { badge: 'amber', dot: 'bg-amber-500' },
@@ -140,16 +143,7 @@ export default function ProjectsPage({
 
       {/* Search + stats */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search projects by name, county, or type…"
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/12 bg-white dark:bg-white/4 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
-          />
-        </div>
+        <SearchBar value={search} onChange={setSearch} placeholder="Search projects by name, county, or type…" />
         <div className="flex gap-2">
           {[
             { label: 'Total', value: myProjects.length, color: 'text-slate-700 dark:text-slate-300' },
@@ -314,110 +308,109 @@ export default function ProjectsPage({
       )}
 
       {/* ── Create Project Modal ─────────────────────────────────────────── */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+      {/* ── Create Project Modal ─────────────────────────────────────────── */}
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title="Register New Project"
+        subtitle="Enter building details to begin the cost estimation workflow"
+        icon={<Building className="w-4 h-4" />}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
+            <Button type="submit" form="project-form" disabled={!form.name.trim() || !form.floorAreaPerFloor}>
+              <Plus className="w-4 h-4" /> Create Project
+            </Button>
+          </>
+        }
+      >
+        <form id="project-form" onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            label="Project Name *"
+            required
+            placeholder="e.g. Westlands Office Complex"
+            value={form.name}
+            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+          />
 
-          <div className="relative z-10 w-full max-w-xl bg-white dark:bg-[#0f1629] rounded-2xl shadow-2xl border border-slate-200 dark:border-white/12 animate-slide-up max-h-[90vh] overflow-y-auto">
-            {/* Modal header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-white/8">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Register New Project</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Enter building details to begin the cost estimation workflow</p>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/8 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {/* Name */}
-              <div>
-                <label className={labelCls}>Project Name *</label>
-                <input required className={inputCls} placeholder="e.g. Westlands Office Complex" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-              </div>
-
-              {/* Location + County */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Location / Address</label>
-                  <input className={inputCls} placeholder="Street / area" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
-                </div>
-                <div>
-                  <label className={labelCls}>County *</label>
-                  <select required className={inputCls} value={form.county} onChange={e => setForm(f => ({ ...f, county: e.target.value }))}>
-                    {KENYA_COUNTIES.map(c => <option key={c}>{c}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* Building Type + Standard */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Building Type *</label>
-                  <select required className={inputCls} value={form.buildingType} onChange={e => setForm(f => ({ ...f, buildingType: e.target.value as BuildingType }))}>
-                    {BUILDING_TYPES.map(t => <option key={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelCls}>Construction Standard *</label>
-                  <select required className={inputCls} value={form.constructionStandard} onChange={e => setForm(f => ({ ...f, constructionStandard: e.target.value as ConstructionStandard }))}>
-                    {STANDARDS.map(s => <option key={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* GFA + Floors */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Floor Area per Floor (m²) *</label>
-                  <input required type="number" min="10" max="50000" className={inputCls} placeholder="e.g. 250" value={form.floorAreaPerFloor} onChange={e => setForm(f => ({ ...f, floorAreaPerFloor: e.target.value }))} />
-                </div>
-                <div>
-                  <label className={labelCls}>Number of Floors *</label>
-                  <input required type="number" min="1" max="100" className={inputCls} placeholder="1" value={form.floors} onChange={e => setForm(f => ({ ...f, floors: e.target.value }))} />
-                </div>
-              </div>
-
-              {/* Status */}
-              <div>
-                <label className={labelCls}>Project Status</label>
-                <select className={inputCls} value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as ProjectStatus }))}>
-                  {(['Planning', 'Under Construction', 'Active', 'Archived'] as ProjectStatus[]).map(s => <option key={s}>{s}</option>)}
-                </select>
-              </div>
-
-              {/* GFA preview */}
-              {form.floorAreaPerFloor && form.floors && (
-                <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl px-4 py-3">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
-                    Total GFA: <strong>{(Number(form.floorAreaPerFloor) * Number(form.floors)).toLocaleString()} m²</strong>
-                    {' '}· {form.buildingType} · {form.county}
-                  </p>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-white/12 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/6 transition">
-                  Cancel
-                </button>
-                <button type="submit"
-                  disabled={!form.name.trim() || !form.floorAreaPerFloor}
-                  className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/40 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-md shadow-emerald-600/20 transition">
-                  Create Project
-                </button>
-              </div>
-            </form>
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Location / Address"
+              placeholder="Street / area"
+              value={form.location}
+              onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+            />
+            <Select
+              label="County *"
+              required
+              value={form.county}
+              onChange={e => setForm(f => ({ ...f, county: e.target.value }))}
+            >
+              {KENYA_COUNTIES.map(c => <option key={c}>{c}</option>)}
+            </Select>
           </div>
-        </div>
-      )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Building Type *"
+              required
+              value={form.buildingType}
+              onChange={e => setForm(f => ({ ...f, buildingType: e.target.value as BuildingType }))}
+            >
+              {BUILDING_TYPES.map(t => <option key={t}>{t}</option>)}
+            </Select>
+            <Select
+              label="Construction Standard *"
+              required
+              value={form.constructionStandard}
+              onChange={e => setForm(f => ({ ...f, constructionStandard: e.target.value as ConstructionStandard }))}
+            >
+              {STANDARDS.map(s => <option key={s}>{s}</option>)}
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Floor Area per Floor (m²) *"
+              type="number"
+              min={10}
+              max={50000}
+              required
+              placeholder="e.g. 250"
+              value={form.floorAreaPerFloor}
+              onChange={e => setForm(f => ({ ...f, floorAreaPerFloor: e.target.value }))}
+            />
+            <Input
+              label="Number of Floors *"
+              type="number"
+              min={1}
+              max={100}
+              required
+              placeholder="1"
+              value={form.floors}
+              onChange={e => setForm(f => ({ ...f, floors: e.target.value }))}
+            />
+          </div>
+
+          <Select
+            label="Project Status"
+            value={form.status}
+            onChange={e => setForm(f => ({ ...f, status: e.target.value as ProjectStatus }))}
+          >
+            {(['Planning', 'Under Construction', 'Active', 'Archived'] as ProjectStatus[]).map(s => <option key={s}>{s}</option>)}
+          </Select>
+
+          {form.floorAreaPerFloor && form.floors && (
+            <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl px-4 py-3">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                Total GFA: <strong>{(Number(form.floorAreaPerFloor) * Number(form.floors)).toLocaleString()} m²</strong>
+                {' '}· {form.buildingType} · {form.county}
+              </p>
+            </div>
+          )}
+        </form>
+      </Modal>
 
       {/* Close menus on outside click */}
       {openMenu && (

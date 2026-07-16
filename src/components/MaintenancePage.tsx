@@ -5,6 +5,10 @@ import { fetchTasks, upsertTask, deleteTask } from '../lib/supabase';
 import { fmtKSh, fmtDate } from '../lib/format';
 import { Badge } from './ui/Badge';
 import { StepBar } from './ui/StepBar';
+import { Modal } from './ui/Modal';
+import { Button } from './ui/Button';
+import { Input, Select, Textarea } from './ui/Input';
+import { SearchBar } from './ui/SearchBar';
 
 interface Props {
   projectId: string;
@@ -41,13 +45,6 @@ const CATEGORY_OPTIONS: MaintenanceCategory[] = [
 ];
 
 const PRIORITY_OPTIONS: MaintenancePriority[] = ['Low', 'Medium', 'High', 'Critical'];
-
-const inputCls =
-  'w-full rounded-xl border border-slate-200 dark:border-white/12 bg-slate-50 dark:bg-white/4 ' +
-  'px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 ' +
-  'focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition disabled:opacity-50 disabled:cursor-not-allowed';
-
-const labelCls = 'block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5';
 
 // ─── Badge helpers ────────────────────────────────────────────────────────────
 
@@ -169,105 +166,85 @@ function CreateModal({ open, onClose, onSave, saving }: CreateModalProps) {
           <div className="px-6 py-5 max-h-[70vh] overflow-y-auto space-y-5">
             {/* Title + Component */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Task Title <span className="text-red-500">*</span></label>
-                <input
-                  ref={titleRef}
-                  className={inputCls}
-                  value={form.title}
-                  onChange={(e) => set('title', e.target.value)}
-                  placeholder="e.g. Replace AC filter unit 3"
-                />
-                {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
-              </div>
-              <div>
-                <label className={labelCls}>Component / Asset <span className="text-red-500">*</span></label>
-                <input
-                  className={inputCls}
-                  value={form.component}
-                  onChange={(e) => set('component', e.target.value)}
-                  placeholder="e.g. HVAC System — Floor 2"
-                />
-                {errors.component && <p className="text-xs text-red-500 mt-1">{errors.component}</p>}
-              </div>
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className={labelCls}>Description</label>
-              <textarea
-                className={inputCls + ' resize-none'}
-                rows={3}
-                value={form.description}
-                onChange={(e) => set('description', e.target.value)}
-                placeholder="Describe the task in detail..."
+              <Input
+                label="Task Title *"
+                value={form.title}
+                onChange={(e) => set('title', e.target.value)}
+                placeholder="e.g. Replace AC filter unit 3"
+                error={errors.title}
+              />
+              <Input
+                label="Component / Asset *"
+                value={form.component}
+                onChange={(e) => set('component', e.target.value)}
+                placeholder="e.g. HVAC System — Floor 2"
+                error={errors.component}
               />
             </div>
 
+            {/* Description */}
+            <Textarea
+              label="Description"
+              rows={3}
+              value={form.description}
+              onChange={(e) => set('description', e.target.value)}
+              placeholder="Describe the task in detail..."
+            />
+
             {/* Category + Priority */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Category</label>
-                <select className={inputCls} value={form.category} onChange={(e) => set('category', e.target.value as MaintenanceCategory)}>
-                  {CATEGORY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>Priority</label>
-                <select className={inputCls} value={form.priority} onChange={(e) => set('priority', e.target.value as MaintenancePriority)}>
-                  {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
+              <Select
+                label="Category"
+                value={form.category}
+                onChange={(e) => set('category', e.target.value as MaintenanceCategory)}
+              >
+                {CATEGORY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </Select>
+              <Select
+                label="Priority"
+                value={form.priority}
+                onChange={(e) => set('priority', e.target.value as MaintenancePriority)}
+              >
+                {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+              </Select>
             </div>
 
             {/* Assigned To + Target Date */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Assigned To</label>
-                <input
-                  className={inputCls}
-                  value={form.assignedTo}
-                  onChange={(e) => set('assignedTo', e.target.value)}
-                  placeholder="Technician name or team"
-                />
-              </div>
-              <div>
-                <label className={labelCls}>Target Date <span className="text-red-500">*</span></label>
-                <input
-                  type="date"
-                  className={inputCls}
-                  value={form.targetDate}
-                  onChange={(e) => set('targetDate', e.target.value)}
-                />
-                {errors.targetDate && <p className="text-xs text-red-500 mt-1">{errors.targetDate}</p>}
-              </div>
+              <Input
+                label="Assigned To"
+                value={form.assignedTo}
+                onChange={(e) => set('assignedTo', e.target.value)}
+                placeholder="Technician name or team"
+              />
+              <Input
+                label="Target Date *"
+                type="date"
+                value={form.targetDate}
+                onChange={(e) => set('targetDate', e.target.value)}
+                error={errors.targetDate}
+              />
             </div>
 
             {/* Estimated Cost */}
-            <div>
-              <label className={labelCls}>Estimated Cost (KSh)</label>
-              <input
-                type="number"
-                min="0"
-                step="500"
-                className={inputCls}
-                value={form.estimatedCost}
-                onChange={(e) => set('estimatedCost', e.target.value)}
-                placeholder="0"
-              />
-            </div>
+            <Input
+              label="Estimated Cost (KSh)"
+              type="number"
+              min={0}
+              step={500}
+              value={form.estimatedCost}
+              onChange={(e) => set('estimatedCost', e.target.value)}
+              placeholder="0"
+            />
 
             {/* Notes */}
-            <div>
-              <label className={labelCls}>Notes</label>
-              <textarea
-                className={inputCls + ' resize-none'}
-                rows={2}
-                value={form.notes}
-                onChange={(e) => set('notes', e.target.value)}
-                placeholder="Any additional notes or special instructions..."
-              />
-            </div>
+            <Textarea
+              label="Notes"
+              rows={2}
+              value={form.notes}
+              onChange={(e) => set('notes', e.target.value)}
+              placeholder="Any additional notes or special instructions..."
+            />
           </div>
 
           {/* Footer */}
@@ -328,7 +305,7 @@ function StatusDropdown({ current, onChange }: StatusDropdownProps) {
             <button
               key={s}
               onClick={() => { onChange(s); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-white/3 dark:hover:bg-white/6 transition-colors ${s === current ? 'font-bold text-emerald-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}
+              className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-white/6 transition-colors ${s === current ? 'font-bold text-emerald-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}
             >
               {s}
             </button>
@@ -560,7 +537,7 @@ export default function MaintenancePage({ projectId, projectName, currentUser }:
         <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
-            className="w-full rounded-lg border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+            className="w-full rounded-lg border border-slate-300 dark:border-white/12 bg-white dark:bg-[#0f1629] pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
             placeholder="Search tasks…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -573,7 +550,7 @@ export default function MaintenancePage({ projectId, projectName, currentUser }:
 
         {/* Status filter */}
         <select
-          className="rounded-lg border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+          className="rounded-lg border border-slate-300 dark:border-white/12 bg-white dark:bg-[#0f1629] px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as MaintenanceStatus | 'All')}
         >
@@ -583,7 +560,7 @@ export default function MaintenancePage({ projectId, projectName, currentUser }:
 
         {/* Category filter */}
         <select
-          className="rounded-lg border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+          className="rounded-lg border border-slate-300 dark:border-white/12 bg-white dark:bg-[#0f1629] px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value as MaintenanceCategory | 'All')}
         >
@@ -593,7 +570,7 @@ export default function MaintenancePage({ projectId, projectName, currentUser }:
 
         {/* Priority filter */}
         <select
-          className="rounded-lg border border-slate-300 dark:border-white/12 dark:border-white/12 bg-white dark:bg-[#0f1629] px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+          className="rounded-lg border border-slate-300 dark:border-white/12 bg-white dark:bg-[#0f1629] px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value as MaintenancePriority | 'All')}
         >

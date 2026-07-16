@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Upload, FileCheck, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle2, X, ArrowLeft, Loader as Loader2, Eye, FileText, Cpu, Layers, ChevronRight, Info, Building2, MapPin, RotateCcw, Pencil } from 'lucide-react';
 import { analyzeBlueprint } from '../lib/gemini';
 import { StepBar } from './ui/StepBar';
+import { Input, Select } from './ui/Input';
 import type { Project, BlueprintAnalysisResult, BuildingType, ConstructionStandard } from '../types';
 
 interface Props {
@@ -65,8 +66,6 @@ function getCurrentStepLabel(stage: Stage, analysisStep: number): string {
   return STEP_LABELS[0];
 }
 
-const inputCls = 'w-full rounded-xl border border-slate-200 dark:border-white/12 bg-slate-50 dark:bg-white/4 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition';
-const labelCls = 'block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5';
 
 export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
   const [stage, setStage] = useState<Stage>('idle');
@@ -460,41 +459,48 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
 
               <div className="p-5 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelCls}>Floor Area per Floor (m²) *</label>
-                    <input type="number" min="1" value={manualFloorArea}
-                      onChange={e => setManualFloorArea(e.target.value)}
-                      className={inputCls} placeholder="e.g. 250" />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Number of Floors *</label>
-                    <input type="number" min="1" value={manualFloors}
-                      onChange={e => setManualFloors(e.target.value)}
-                      className={inputCls} placeholder="e.g. 3" />
-                  </div>
+                  <Input
+                    label="Floor Area per Floor (m²) *"
+                    type="number"
+                    min={1}
+                    value={manualFloorArea}
+                    onChange={e => setManualFloorArea(e.target.value)}
+                    placeholder="e.g. 250"
+                  />
+                  <Input
+                    label="Number of Floors *"
+                    type="number"
+                    min={1}
+                    value={manualFloors}
+                    onChange={e => setManualFloors(e.target.value)}
+                    placeholder="e.g. 3"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelCls}>Building Type</label>
-                    <select value={manualBuildingType} onChange={e => setManualBuildingType(e.target.value)} className={inputCls}>
-                      {BUILDING_TYPES.map(t => <option key={t}>{t}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelCls}>Construction Standard</label>
-                    <select value={manualStandard} onChange={e => setManualStandard(e.target.value)} className={inputCls}>
-                      {STANDARDS.map(s => <option key={s}>{s}</option>)}
-                    </select>
-                  </div>
+                  <Select
+                    label="Building Type"
+                    value={manualBuildingType}
+                    onChange={e => setManualBuildingType(e.target.value)}
+                  >
+                    {BUILDING_TYPES.map(t => <option key={t}>{t}</option>)}
+                  </Select>
+                  <Select
+                    label="Construction Standard"
+                    value={manualStandard}
+                    onChange={e => setManualStandard(e.target.value)}
+                  >
+                    {STANDARDS.map(s => <option key={s}>{s}</option>)}
+                  </Select>
                 </div>
 
-                <div>
-                  <label className={labelCls}>County</label>
-                  <select value={manualCounty} onChange={e => setManualCounty(e.target.value)} className={inputCls}>
-                    {KENYA_COUNTIES.map(c => <option key={c}>{c}</option>)}
-                  </select>
-                </div>
+                <Select
+                  label="County"
+                  value={manualCounty}
+                  onChange={e => setManualCounty(e.target.value)}
+                >
+                  {KENYA_COUNTIES.map(c => <option key={c}>{c}</option>)}
+                </Select>
 
                 {/* GFA summary */}
                 {manualFloorArea && manualFloors && (

@@ -8,53 +8,13 @@ import type { User, Project, MaintenanceTask } from '../types';
 import { fetchTasks } from '../lib/supabase';
 import { fmtKSh } from '../lib/format';
 import { Badge } from './ui/Badge';
+import { KpiCard } from './ui/KpiCard';
+import { Loading } from './ui/Loading';
 
 interface Props {
   user: User;
   projects: Project[];
   onNavigate: (tab: string) => void;
-}
-
-// ─── Shared primitives ────────────────────────────────────────────────────────
-
-interface KpiProps {
-  label: string;
-  value: string | number;
-  icon: React.ReactNode;
-  trend?: string;
-  trendUp?: boolean;
-  sub?: string;
-  color?: string;
-}
-
-function Kpi({ label, value, icon, trend, trendUp, sub, color = 'emerald' }: KpiProps) {
-  const colorMap: Record<string, string> = {
-    emerald: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400',
-    blue: 'bg-blue-100 text-emerald-600 dark:bg-blue-950/40 dark:text-blue-400',
-    violet: 'bg-violet-100 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400',
-    amber: 'bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400',
-    rose: 'bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400',
-    slate: 'bg-slate-100 text-slate-600 dark:bg-[#0f1629] dark:text-slate-400',
-  };
-  return (
-    <div className="group bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-white/8 rounded-2xl p-5 hover:border-slate-300 dark:hover:border-white/14 hover:shadow-md transition-all">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform ${colorMap[color] ?? colorMap.emerald}`}>
-          {icon}
-        </div>
-        {trend && (
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-            trendUp ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400'
-          }`}>{trend}</span>
-        )}
-      </div>
-      <div className="text-2xl font-black text-slate-900 dark:text-white tabular-nums leading-none mb-1">
-        {value}
-      </div>
-      <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</div>
-      {sub && <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{sub}</div>}
-    </div>
-  );
 }
 
 function SectionCard({ title, icon, children, action, onAction }: {
@@ -136,10 +96,10 @@ function AdminDashboard({ projects, onNavigate }: { projects: Project[]; onNavig
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Kpi label="Total Projects" value={projects.length} icon={<FolderOpen className="w-5 h-5" />} color="blue" sub="All registered" />
-        <Kpi label="Active Projects" value={activeProjects} icon={<Activity className="w-5 h-5" />} color="emerald" trend="+2 this week" trendUp />
-        <Kpi label="System Users" value={3} icon={<Users className="w-5 h-5" />} color="violet" sub="3 roles active" />
-        <Kpi label="Price Records" value={44} icon={<Package className="w-5 h-5" />} color="amber" sub="Live from Supabase" />
+        <KpiCard label="Total Projects" value={projects.length} icon={<FolderOpen className="w-5 h-5" />} color="blue" sub="All registered" />
+        <KpiCard label="Active Projects" value={activeProjects} icon={<Activity className="w-5 h-5" />} color="emerald" trend="+2 this week" trendUp />
+        <KpiCard label="System Users" value={3} icon={<Users className="w-5 h-5" />} color="violet" sub="3 roles active" />
+        <KpiCard label="Price Records" value={44} icon={<Package className="w-5 h-5" />} color="amber" sub="Live from Supabase" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -278,10 +238,10 @@ function OwnerDashboard({ user, projects, onNavigate }: Props) {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Kpi label="Projects" value={myProjects.length} icon={<FolderOpen className="w-5 h-5" />} color="blue" sub="Registered" />
-        <Kpi label="Blueprints" value={withBlueprint} icon={<Layers className="w-5 h-5" />} color="emerald" sub="Uploaded & analysed" />
-        <Kpi label="Estimates" value={withEstimate} icon={<Calculator className="w-5 h-5" />} color="violet" sub="BOQ complete" />
-        <Kpi label="Pending" value={pendingBlueprint} icon={<Clock className="w-5 h-5" />} color="amber" sub="Awaiting blueprint" />
+        <KpiCard label="Projects" value={myProjects.length} icon={<FolderOpen className="w-5 h-5" />} color="blue" sub="Registered" />
+        <KpiCard label="Blueprints" value={withBlueprint} icon={<Layers className="w-5 h-5" />} color="emerald" sub="Uploaded & analysed" />
+        <KpiCard label="Estimates" value={withEstimate} icon={<Calculator className="w-5 h-5" />} color="violet" sub="BOQ complete" />
+        <KpiCard label="Pending" value={pendingBlueprint} icon={<Clock className="w-5 h-5" />} color="amber" sub="Awaiting blueprint" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -498,10 +458,10 @@ function FMDashboard({ user, projects, onNavigate }: Props) {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Kpi label="Total Tasks" value={loading ? '…' : tasks.length} icon={<ClipboardList className="w-5 h-5" />} color="slate" sub="All time" />
-        <Kpi label="Pending" value={loading ? '…' : pending} icon={<Clock className="w-5 h-5" />} color="amber" sub="Awaiting action" />
-        <Kpi label="In Progress" value={loading ? '…' : inProgress} icon={<Activity className="w-5 h-5" />} color="blue" sub="Active work orders" />
-        <Kpi label="Critical" value={loading ? '…' : critical} icon={<AlertTriangle className="w-5 h-5" />} color="rose" sub="High priority" />
+        <KpiCard label="Total Tasks" value={loading ? '…' : tasks.length} icon={<ClipboardList className="w-5 h-5" />} color="slate" sub="All time" />
+        <KpiCard label="Pending" value={loading ? '…' : pending} icon={<Clock className="w-5 h-5" />} color="amber" sub="Awaiting action" />
+        <KpiCard label="In Progress" value={loading ? '…' : inProgress} icon={<Activity className="w-5 h-5" />} color="blue" sub="Active work orders" />
+        <KpiCard label="Critical" value={loading ? '…' : critical} icon={<AlertTriangle className="w-5 h-5" />} color="rose" sub="High priority" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
