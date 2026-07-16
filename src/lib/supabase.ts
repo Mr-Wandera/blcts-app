@@ -1,4 +1,4 @@
-﻿import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import type { RegionalPricingRow, MaterialRow, ConstructionMaterialRow, BOQEstimate, BOQLineItem, MaintenanceTask } from '../types';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string;
