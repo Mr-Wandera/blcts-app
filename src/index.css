@@ -1,52 +1,105 @@
 @import "tailwindcss";
 
-@layer base {
-  *, *::before, *::after { box-sizing: border-box; }
-  html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  body { @apply bg-slate-50 text-slate-900; }
-  .dark body { @apply bg-[#0a0f1e] text-slate-100; }
-  .dark { color-scheme: dark; }
-  ::selection { background: rgba(16, 185, 129, 0.25); }
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { @apply bg-transparent; }
-  ::-webkit-scrollbar-thumb { @apply bg-slate-300 dark:bg-slate-600 rounded-full; }
-  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-400 dark:bg-slate-500; }
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-emerald-300: #6ee7b7;
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
 }
 
-@layer utilities {
-  .animate-fade-in { animation: fadeIn 0.25s ease-out both; }
-  .animate-slide-up { animation: slideUp 0.3s ease-out both; }
-  .animate-slide-in { animation: slideIn 0.3s ease-out both; }
-  .glass {
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
+:root {
+  --bg-primary: #f8fafc;
+  --bg-card: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
 }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slideIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
-
-/* Skeleton loader */
-.skeleton {
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-.dark .skeleton {
-  background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.06) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+.dark {
+  --bg-primary: #0a0f1e;
+  --bg-card: #0f1629;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border-color: rgba(255, 255, 255, 0.08);
 }
 
-/* Print styles */
-@media print {
-  nav, aside, header, button, .no-print { display: none !important; }
-  body { @apply bg-white text-slate-900; }
-  .print-full { width: 100% !important; break-inside: avoid; }
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* Select dropdown option styling for dark mode */
+.dark select option {
+  background: #0f1629;
+  color: #f1f5f9;
+}
+
+select option {
+  background: #ffffff;
+  color: #0f172a;
 }
