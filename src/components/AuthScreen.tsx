@@ -1,9 +1,6 @@
 import { useState } from 'react';
-import { Building2, Eye, EyeOff, LogIn, Lock, UserPlus, ArrowLeft } from 'lucide-react';
+import { Building2, Eye, EyeOff, LogIn, UserPlus, Lock } from 'lucide-react';
 import type { User, UserRole } from '../types';
-﻿import { useState } from 'react';
-import { Building2, Eye, EyeOff, LogIn, Shield, Lock } from 'lucide-react';
-import type { User } from '../types';
 
 const DEMO_ACCOUNTS: (User & { password: string })[] = [
   { id: 'demo-admin-001', name: 'Admin User', email: 'admin@blcts.ke', password: 'admin123', role: 'Administrator', organization: 'BLCTS HQ' },
@@ -132,18 +129,19 @@ export function AuthScreen({ onLogin }: Props) {
             </p>
           </div>
 
-          {/* Forms */}
+          {/* Login form */}
           {mode === 'login' ? (
             <form onSubmit={handleLogin} noValidate className="space-y-4">
               <div>
                 <label className={labelBase}>Email address</label>
                 <input
-                  id="password" type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password" required
-                  value={password}
-                  onChange={e => { setPassword(e.target.value); setError(''); }}
-                  placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"
-                  className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-white/12 bg-white/6 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={e => { setEmail(e.target.value); setError(''); }}
+                  placeholder="you@example.com"
+                  className={inputBase}
                 />
               </div>
               <div>
@@ -151,7 +149,8 @@ export function AuthScreen({ onLogin }: Props) {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password" required
+                    autoComplete="current-password"
+                    required
                     value={password}
                     onChange={e => { setPassword(e.target.value); setError(''); }}
                     placeholder="••••••••"
@@ -172,57 +171,123 @@ export function AuthScreen({ onLogin }: Props) {
                 </div>
               )}
 
-            {/* Error */}
-            {error && (
-              <div className="flex items-start gap-2 text-sm text-rose-400 bg-rose-950/30 border border-rose-800/50 rounded-xl px-3.5 py-2.5">
-                <span className="mt-0.5 flex-shrink-0">ΓÜá</span>
-                <span>{error}</span>
+              <button type="submit"
+                disabled={loading || !email || !password}
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/40 disabled:cursor-not-allowed text-white font-bold text-sm transition-all shadow-lg shadow-emerald-600/25 hover:-translate-y-px"
+              >
+                {loading
+                  ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  : <LogIn className="w-4 h-4" />}
+                {loading ? 'Signing in...' : 'Sign In'}
+              </button>
+            </form>
+          ) : (
+            /* Signup form */
+            <form onSubmit={handleSignup} noValidate className="space-y-4">
+              <div>
+                <label className={labelBase}>Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={e => { setName(e.target.value); setError(''); }}
+                  placeholder="Jane Doe"
+                  className={inputBase}
+                />
               </div>
-            )}
+              <div>
+                <label className={labelBase}>Email address</label>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={e => { setEmail(e.target.value); setError(''); }}
+                  placeholder="you@example.com"
+                  className={inputBase}
+                />
+              </div>
+              <div>
+                <label className={labelBase}>Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    required
+                    value={password}
+                    onChange={e => { setPassword(e.target.value); setError(''); }}
+                    placeholder="••••••••"
+                    className={inputBase + ' pr-10'}
+                  />
+                  <button type="button" onClick={() => setShowPassword(p => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition"
+                    tabIndex={-1}>
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelBase}>Role</label>
+                  <select
+                    value={role}
+                    onChange={e => setRole(e.target.value as UserRole)}
+                    className={inputBase}
+                  >
+                    <option value="Building Owner">Building Owner</option>
+                    <option value="Facility Manager">Facility Manager</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelBase}>Organization</label>
+                  <input
+                    type="text"
+                    value={organization}
+                    onChange={e => { setOrganization(e.target.value); setError(''); }}
+                    placeholder="Optional"
+                    className={inputBase}
+                  />
+                </div>
+              </div>
 
-            {/* Submit */}
-            <button type="submit"
-              disabled={loading || !email || !password}
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/40 disabled:cursor-not-allowed text-white font-bold text-sm transition-all shadow-lg shadow-emerald-600/25 hover:-translate-y-px"
+              {error && (
+                <div className="flex items-start gap-2 text-sm text-rose-400 bg-rose-950/30 border border-rose-800/50 rounded-xl px-3.5 py-2.5">
+                  <span className="mt-0.5 flex-shrink-0">⚠</span>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <button type="submit"
+                disabled={loading || !name || !email || !password}
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/40 disabled:cursor-not-allowed text-white font-bold text-sm transition-all shadow-lg shadow-emerald-600/25 hover:-translate-y-px"
+              >
+                {loading
+                  ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  : <UserPlus className="w-4 h-4" />}
+                {loading ? 'Creating account...' : 'Create Account'}
+              </button>
+            </form>
+          )}
+
+          {/* Mode switch */}
+          <div className="mt-5 text-center">
+            <button
+              type="button"
+              onClick={() => { setMode(m => m === 'login' ? 'signup' : 'login'); setError(''); }}
+              className="text-sm text-emerald-400 hover:text-emerald-300 transition font-medium"
             >
-              {loading
-                ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                : <LogIn className="w-4 h-4" />}
-              {loading ? 'Signing inΓÇª' : 'Sign In'}
+              {mode === 'login'
+                ? "Don't have an account? Sign up"
+                : 'Already have an account? Sign in'}
             </button>
-          </form>
+          </div>
         </div>
 
         {/* Demo accounts */}
-        <div className="mt-6">
-          <p className="text-center text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
-            Demo Accounts ΓÇö Click to autofill
-          </p>
-          <div className="grid grid-cols-3 gap-2.5">
-            {DEMO_ACCOUNTS.map(account => {
-              const styles = ROLE_STYLES[account.role];
-              return (
-                <button key={account.id} type="button"
-                  onClick={() => { setEmail(account.email); setPassword(account.password); setError(''); }}
-                  className={`group relative flex flex-col items-start gap-2 p-3 rounded-xl bg-white/4 border ${styles.border} transition-all hover:bg-white/6 text-left`}
-                >
-                  <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${styles.dot}`} />
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${styles.badge}`}>
-                    {account.role === 'Administrator' ? 'Admin' : account.role === 'Building Owner' ? 'Owner' : 'FM'}
-                  </span>
-                  <div className="w-full">
-                    <p className="text-[10px] font-semibold text-slate-300 truncate group-hover:text-white transition">{account.email}</p>
-                    <p className="text-[9px] text-slate-500 font-mono mt-0.5 tracking-wide">{account.password}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-5 flex items-center gap-2 justify-center">
-            <Lock className="w-3 h-3 text-slate-600" />
-            <p className="text-[10px] text-slate-600 text-center">
-              New accounts are created by the Administrator ┬╖ Admin registration is disabled
+        {mode === 'login' && (
+          <div className="mt-6">
+            <p className="text-center text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
+              Demo Accounts — Click to autofill
             </p>
             <div className="grid grid-cols-3 gap-2.5">
               {DEMO_ACCOUNTS.map(account => {

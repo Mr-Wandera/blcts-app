@@ -4,7 +4,7 @@
  */
 
 import React from "react";
-import { AlertTriangle } from "lucide-react";
+import { TriangleAlert as AlertTriangle } from "lucide-react";
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -15,13 +15,14 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className = "", label, error, icon, rightElement, id, ...props }, ref) => {
-    const generatedId = id || React.useId();
+    const generatedId = React.useId();
+    const inputId = id || generatedId;
 
     return (
       <div className="space-y-1.5 w-full">
         {label && (
           <label 
-            htmlFor={generatedId} 
+            htmlFor={inputId}
             className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-display"
           >
             {label}
@@ -34,7 +35,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             </div>
           )}
           <input
-            id={generatedId}
+            id={inputId}
             ref={ref}
             className={`
               w-full bg-slate-50 dark:bg-slate-900 border 
