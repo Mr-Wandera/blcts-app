@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, DollarSign, MapPin, Search, Plus, CreditCard as Edit3, Save, X, TrendingUp } from 'lucide-react';
 import { useToast } from './ui/Toast';
+import { fetchMaterials, fetchRegions, updateMaterialPrice, updateRegionMultiplier, FALLBACK_MATERIALS, FALLBACK_REGIONS } from '../lib/pricing';
+import type { MaterialPrice, RegionalPrice } from '../types';
 
 interface Props {
   onBack: () => void;
@@ -18,79 +20,7 @@ const selectStyle = {
   appearance: 'none',
 };
 
-interface Material {
-  id: string;
-  name: string;
-  category: string;
-  unit: string;
-  basePrice: number;
-}
 
-interface Region {
-  id: string;
-  county: string;
-  multiplier: number;
-}
-
-const DEFAULT_MATERIALS: Material[] = [
-  { id: 'm1', name: 'Cement (50kg)', category: 'Cement & Aggregates', unit: 'bag', basePrice: 850 },
-  { id: 'm2', name: 'Sand (Ton)', category: 'Cement & Aggregates', unit: 'ton', basePrice: 2200 },
-  { id: 'm3', name: 'Ballast (Ton)', category: 'Cement & Aggregates', unit: 'ton', basePrice: 1800 },
-  { id: 'm4', name: 'Steel Bars (Y12)', category: 'Reinforcement', unit: 'kg', basePrice: 120 },
-  { id: 'm5', name: 'Steel Bars (Y16)', category: 'Reinforcement', unit: 'kg', basePrice: 125 },
-  { id: 'm6', name: 'BRC Mesh (A142)', category: 'Reinforcement', unit: 'sheet', basePrice: 2800 },
-  { id: 'm7', name: 'Bricks (Machine)', category: 'Masonry', unit: 'no', basePrice: 18 },
-  { id: 'm8', name: 'Blocks (200mm)', category: 'Masonry', unit: 'no', basePrice: 65 },
-  { id: 'm9', name: 'Stone (Nairobi)', category: 'Masonry', unit: 'm²', basePrice: 3200 },
-  { id: 'm10', name: 'Roofing Sheets (IT4)', category: 'Roofing', unit: 'm²', basePrice: 850 },
-  { id: 'm11', name: 'Roofing Nails', category: 'Roofing', unit: 'kg', basePrice: 350 },
-  { id: 'm12', name: 'Timber (4x2)', category: 'Timber', unit: 'm', basePrice: 450 },
-  { id: 'm13', name: 'Plywood (18mm)', category: 'Timber', unit: 'sheet', basePrice: 3200 },
-  { id: 'm14', name: 'Floor Tiles (600x600)', category: 'Finishes', unit: 'm²', basePrice: 1450 },
-  { id: 'm15', name: 'Wall Paint (20L)', category: 'Finishes', unit: 'drum', basePrice: 6500 },
-  { id: 'm16', name: 'Ceiling Board', category: 'Finishes', unit: 'm²', basePrice: 780 },
-  { id: 'm17', name: 'Aluminum Window', category: 'Openings', unit: 'no', basePrice: 12500 },
-  { id: 'm18', name: 'Panel Door', category: 'Openings', unit: 'no', basePrice: 8500 },
-  { id: 'm19', name: 'PVC Pipes (110mm)', category: 'Plumbing', unit: 'm', basePrice: 1200 },
-  { id: 'm20', name: 'PVC Pipes (50mm)', category: 'Plumbing', unit: 'm', basePrice: 650 },
-  { id: 'm21', name: 'Electrical Cable (2.5mm)', category: 'Electrical', unit: 'm', basePrice: 85 },
-  { id: 'm22', name: 'Switches', category: 'Electrical', unit: 'no', basePrice: 250 },
-  { id: 'm23', name: 'Sockets', category: 'Electrical', unit: 'no', basePrice: 350 },
-  { id: 'm24', name: 'Water Tank (1000L)', category: 'Water Systems', unit: 'no', basePrice: 35000 },
-  { id: 'm25', name: 'Water Pump', category: 'Water Systems', unit: 'no', basePrice: 45000 },
-  { id: 'm26', name: 'Bathroom Set', category: 'Sanitary', unit: 'set', basePrice: 28000 },
-  { id: 'm27', name: 'Kitchen Sink', category: 'Sanitary', unit: 'no', basePrice: 12000 },
-  { id: 'm28', name: 'Septic Tank', category: 'Sanitary', unit: 'no', basePrice: 85000 },
-  { id: 'm29', name: 'Solar Panel (300W)', category: 'Energy', unit: 'panel', basePrice: 18000 },
-  { id: 'm30', name: 'Inverter (3kW)', category: 'Energy', unit: 'no', basePrice: 65000 },
-  { id: 'm31', name: 'CCTV Camera', category: 'Security', unit: 'no', basePrice: 8500 },
-  { id: 'm32', name: 'Alarm System', category: 'Security', unit: 'set', basePrice: 45000 },
-  { id: 'm33', name: 'Fire Extinguisher', category: 'Safety', unit: 'no', basePrice: 4500 },
-  { id: 'm34', name: 'Smoke Detector', category: 'Safety', unit: 'no', basePrice: 2500 },
-  { id: 'm35', name: 'Elevator (4-floor)', category: 'MEP Systems', unit: 'no', basePrice: 2500000 },
-  { id: 'm36', name: 'HVAC System', category: 'MEP Systems', unit: 'set', basePrice: 420000 },
-  { id: 'm37', name: 'Generator (20kVA)', category: 'MEP Systems', unit: 'no', basePrice: 350000 },
-  { id: 'm38', name: 'Paving Blocks', category: 'External', unit: 'm²', basePrice: 950 },
-  { id: 'm39', name: 'Chain Link Fence', category: 'External', unit: 'm', basePrice: 1200 },
-  { id: 'm40', name: 'Steel Gate', category: 'External', unit: 'no', basePrice: 45000 },
-  { id: 'm41', name: 'Cabinetry (Wardrobe)', category: 'Fit-out', unit: 'set', basePrice: 38000 },
-  { id: 'm42', name: 'Cabinetry (Kitchen)', category: 'Fit-out', unit: 'set', basePrice: 65000 },
-  { id: 'm43', name: 'Glass Partition', category: 'Fit-out', unit: 'm²', basePrice: 4500 },
-  { id: 'm44', name: 'Waterproofing', category: 'Treatment', unit: 'm²', basePrice: 850 },
-];
-
-const DEFAULT_REGIONS: Region[] = [
-  { id: 'r1', county: 'Nairobi', multiplier: 1.15 },
-  { id: 'r2', county: 'Mombasa', multiplier: 1.12 },
-  { id: 'r3', county: 'Kisumu', multiplier: 0.95 },
-  { id: 'r4', county: 'Nakuru', multiplier: 0.98 },
-  { id: 'r5', county: 'Kiambu', multiplier: 1.05 },
-  { id: 'r6', county: 'Machakos', multiplier: 0.92 },
-  { id: 'r7', county: 'Kajiado', multiplier: 0.88 },
-  { id: 'r8', county: 'Uasin Gishu', multiplier: 0.90 },
-  { id: 'r9', county: 'Nyeri', multiplier: 0.93 },
-  { id: 'r10', county: 'Meru', multiplier: 0.91 },
-];
 
 function formatKsh(n: number): string {
   return 'KSh ' + Math.round(n).toLocaleString('en-KE');
@@ -98,17 +28,32 @@ function formatKsh(n: number): string {
 
 export default function PricingAdminPage({ onBack, initialTab = 'materials' }: Props) {
   const [tab, setTab] = useState<'materials' | 'regional'>(initialTab);
-  const [materials, setMaterials] = useState<Material[]>(() => {
-    try { return JSON.parse(localStorage.getItem('blcts_materials') || 'null') || DEFAULT_MATERIALS; } catch { return DEFAULT_MATERIALS; }
+  const [materials, setMaterials] = useState<MaterialPrice[]>(() => {
+    try { return JSON.parse(localStorage.getItem('blcts_materials') || 'null') || FALLBACK_MATERIALS; } catch { return FALLBACK_MATERIALS; }
   });
-  const [regions, setRegions] = useState<Region[]>(() => {
-    try { return JSON.parse(localStorage.getItem('blcts_regions') || 'null') || DEFAULT_REGIONS; } catch { return DEFAULT_REGIONS; }
+  const [regions, setRegions] = useState<RegionalPrice[]>(() => {
+    try { return JSON.parse(localStorage.getItem('blcts_regions') || 'null') || FALLBACK_REGIONS; } catch { return FALLBACK_REGIONS; }
   });
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState(0);
   const [editMultiplier, setEditMultiplier] = useState(0);
+  const [loading, setLoading] = useState(true);
   const { show } = useToast();
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const [m, r] = await Promise.all([fetchMaterials(), fetchRegions()]);
+      if (!active) return;
+      setMaterials(m);
+      setRegions(r);
+      localStorage.setItem('blcts_materials', JSON.stringify(m));
+      localStorage.setItem('blcts_regions', JSON.stringify(r));
+      setLoading(false);
+    })();
+    return () => { active = false; };
+  }, []);
 
   function saveMaterials() {
     localStorage.setItem('blcts_materials', JSON.stringify(materials));
@@ -126,6 +71,7 @@ export default function PricingAdminPage({ onBack, initialTab = 'materials' }: P
     setMaterials(prev => prev.map(m => m.id === id ? { ...m, basePrice: editValue } : m));
     setEditingId(null);
     saveMaterials();
+    updateMaterialPrice(id, editValue);
     show('Material price updated', 'success');
   }
 
@@ -138,6 +84,7 @@ export default function PricingAdminPage({ onBack, initialTab = 'materials' }: P
     setRegions(prev => prev.map(r => r.id === id ? { ...r, multiplier: editMultiplier } : r));
     setEditingId(null);
     saveRegions();
+    updateRegionMultiplier(id, editMultiplier);
     show('Regional multiplier updated', 'success');
   }
 
