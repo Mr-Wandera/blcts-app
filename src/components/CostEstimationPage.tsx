@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Project, BOQItem, CostEstimate, LifecycleAnalysis, LifecycleCost } from '../types';
 import { ArrowLeft, Calculator, TrendingUp, DollarSign, FileText, Download, RefreshCw, Building2, Layers } from 'lucide-react';
 import { useToast } from './ui/Toast';
+import { getRegionalMultiplier } from '../lib/pricing';
 
 interface Props {
   project: Project;
@@ -74,12 +75,19 @@ export default function CostEstimationPage({ project, onGoToBlueprint }: Props) 
   const [generating, setGenerating] = useState(false);
   const [estimate, setEstimate] = useState<CostEstimate | null>(null);
   const [lifecycle, setLifecycle] = useState<LifecycleAnalysis | null>(null);
+  const [dynamicMultiplier, setDynamicMultiplier] = useState<number | null>(null);
   const { show } = useToast();
+
+  useEffect(() => {
+    let active = true;
+    getRegionalMultiplier(project.county).then(m => { if (active) setDynamicMultiplier(m); });
+    return () => { active = false; };
+  }, [project.county]);
 
   const totalArea = project.floorAreaPerFloor * project.floors;
   const needsBlueprint = !project.blueprintAnalysis || totalArea === 0;
 
-  const countyMultiplier = COUNTY_MULTIPLIERS[project.county] ?? 1.0;
+  const countyMultiplier = dynamicMultiplier ?? COUNTY_MULTIPLIERS[project.county] ?? 1.0;
   const standardMultiplier = STANDARD_MULTIPLIERS[project.constructionStandard] ?? 1.0;
 
   const boqItems = useMemo<BOQItem[]>(() => {
