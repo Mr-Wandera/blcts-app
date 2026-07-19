@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import type { Project, BlueprintAnalysisResult, DetectedRoom, BuildingType, ConstructionStandard } from '../types';
 import { Upload, FileImage, ArrowLeft, ArrowRight, Cpu, CircleCheck as CheckCircle2, CircleAlert as AlertCircle, X } from 'lucide-react';
 import { useToast } from './ui/Toast';
+import { analyzeBlueprint } from '../lib/gemini';
 
 interface Props {
   project: Project;
@@ -36,49 +37,82 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
     county: 'Nairobi',
   });
   const fileRef = useRef<HTMLInputElement>(null);
+  const fileDataRef = useRef<{ base64: string; mimeType: string; name: string } | null>(null);
   const { show } = useToast();
 
   function handleFile(file: File) {
     if (!file) return;
     setFileName(file.name);
     show(`File "${file.name}" uploaded`, 'success');
-    runAnalysis();
+    const reader = new FileReader();
+    reader.onload = () => {
+      fileDataRef.current = { base64: String(reader.result), mimeType: file.type, name: file.name };
+      void runAnalysis();
+    };
+    reader.readAsDataURL(file);
   }
 
-  function runAnalysis() {
+  async function runAnalysis() {
     setStep('analyzing');
-    setTimeout(() => {
-      // Simulated AI analysis result
-      const rooms: DetectedRoom[] = [
-        { label: 'Bedroom', count: 4, areaSqm: 14 },
-        { label: 'Bathroom', count: 2, areaSqm: 5 },
-        { label: 'Kitchen', count: 1, areaSqm: 12 },
-        { label: 'Living Room', count: 1, areaSqm: 25 },
-        { label: 'Dining Room', count: 1, areaSqm: 15 },
-        { label: 'Store', count: 1, areaSqm: 4 },
-      ];
-      const totalArea = rooms.reduce((sum, r) => sum + r.areaSqm * r.count, 0);
-      const result: BlueprintAnalysisResult = {
-        floorAreaPerFloor: Math.round(totalArea * 1.15),
-        floors: 3,
-        buildingType: 'Residential',
-        constructionStandard: 'Standard',
-        county: project.county || 'Nairobi',
-        confidence: 87,
-        detectedRooms: rooms,
-        notes: 'AI analysis complete. Building parameters extracted from blueprint. Room layout detected with high confidence.',
-      };
-      setAnalysis(result);
-      setEditable({
-        floorAreaPerFloor: result.floorAreaPerFloor,
-        floors: result.floors,
-        buildingType: result.buildingType as BuildingType,
-        constructionStandard: result.constructionStandard as ConstructionStandard,
-        county: result.county,
-      });
-      setStep('review');
-      show('AI analysis complete', 'success');
-    }, 2500);
+    const fileData = fileDataRef.current;
+    let result: BlueprintAnalysisResult;
+
+    if (fileData) {
+      try {
+        result = await analyzeBlueprint(fileData.base64, fileData.mimeType, fileData.name);
+      } catch {
+        result = fallbackResult();
+      }
+    } else {
+      result = fallbackResult();
+    }
+
+    // If the AI returned null metrics, fall back to editable defaults so the user can proceed.
+    const floorAreaPerFloor = result.estimatedFloorArea ?? result.floorAreaPerFloor ?? 0;
+    const floors = result.floors ?? 1;
+    const buildingType = (result.buildingType as BuildingType) ?? 'Residential';
+    const constructionStandard = (result.constructionStandard as ConstructionStandard) ?? 'Standard';
+    const county = result.county ?? (project.county || 'Nairobi');
+
+    const merged: BlueprintAnalysisResult = {
+      ...result,
+      floorAreaPerFloor,
+      constructionStandard,
+      county,
+      detectedRooms: result.detectedRooms ?? [],
+      notes: result.notes ?? result.observations[0],
+    };
+
+    setAnalysis(merged);
+    setEditable({ floorAreaPerFloor, floors, buildingType, constructionStandard, county });
+    setStep('review');
+    show(result.isFallback ? 'Using estimated defaults — AI analysis unavailable' : 'AI analysis complete', result.isFallback ? 'error' : 'success');
+  }
+
+  function fallbackResult(): BlueprintAnalysisResult {
+    const rooms: DetectedRoom[] = [
+      { label: 'Bedroom', count: 4, areaSqm: 14 },
+      { label: 'Bathroom', count: 2, areaSqm: 5 },
+      { label: 'Kitchen', count: 1, areaSqm: 12 },
+      { label: 'Living Room', count: 1, areaSqm: 25 },
+      { label: 'Dining Room', count: 1, areaSqm: 15 },
+      { label: 'Store', count: 1, areaSqm: 4 },
+    ];
+    const totalArea = rooms.reduce((sum, r) => sum + r.areaSqm * r.count, 0);
+    const floorAreaPerFloor = Math.round(totalArea * 1.15);
+    return {
+      estimatedFloorArea: floorAreaPerFloor,
+      floors: 3,
+      buildingType: 'Residential',
+      confidence: null,
+      observations: ['Using estimated defaults — AI analysis unavailable. Review and adjust parameters manually.'],
+      isFallback: true,
+      floorAreaPerFloor,
+      constructionStandard: 'Standard',
+      county: project.county || 'Nairobi',
+      detectedRooms: rooms,
+      notes: 'Using estimated defaults — AI analysis unavailable. Review and adjust parameters manually.',
+    };
   }
 
   function handleConfirm() {
@@ -179,8 +213,10 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
               <Cpu className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-violet-700 dark:text-violet-300">AI Analysis Complete — {analysis.confidence}% confidence</p>
-              <p className="text-xs text-violet-600/70 dark:text-violet-400/70 mt-0.5">{analysis.notes}</p>
+              <p className="text-sm font-semibold text-violet-700 dark:text-violet-300">
+                {analysis.isFallback ? 'Estimated Defaults — AI Analysis Unavailable' : `AI Analysis Complete — ${analysis.confidence != null ? Math.round(analysis.confidence * 100) : 0}% confidence`}
+              </p>
+              <p className="text-xs text-violet-600/70 dark:text-violet-400/70 mt-0.5">{analysis.notes ?? analysis.observations[0]}</p>
             </div>
           </div>
 
@@ -190,7 +226,7 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
               <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Detected Rooms</h3>
             </div>
             <div className="divide-y divide-slate-100 dark:divide-white/6">
-              {analysis.detectedRooms.map((r, i) => (
+              {(analysis.detectedRooms ?? []).map((r, i) => (
                 <div key={i} className="flex items-center justify-between px-5 py-3">
                   <span className="text-sm text-slate-700 dark:text-slate-300">{r.label}</span>
                   <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">

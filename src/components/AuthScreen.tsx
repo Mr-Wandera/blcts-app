@@ -104,6 +104,9 @@ export function AuthScreen({ onLogin }: Props) {
           </div>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">BLCTS</h1>
           <p className="text-xs text-slate-500 dark:text-slate-500 tracking-widest uppercase mt-1">Building Lifecycle Cost Intelligence</p>
+          <span className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">
+            <Lock className="w-2.5 h-2.5" /> Demo Mode
+          </span>
         </div>
 
         <div className="bg-white dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl p-8">
