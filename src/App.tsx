@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import type { User, Project, BlueprintAnalysisResult } from './types';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import type { Project, BlueprintAnalysisResult, User, UserRole } from './types';
 import { AuthScreen } from './components/AuthScreen';
 import { Layout } from './components/Layout';
 import { Loading } from './components/ui/Loading';
+import { supabase, mapSupabaseUser, fetchProjects, createProject, updateProject, deleteProject, signOut } from './lib/supabase';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const ProjectsPage = lazy(() => import('./components/ProjectsPage'));
@@ -32,37 +33,83 @@ const TAB_TITLES: Record<Tab, string> = {
 };
 
 function App() {
-  const [showLanding, setShowLanding] = useState(() => !localStorage.getItem('blcts_user'));
-  const [user, setUser] = useState<User | null>(() => {
-    try { return JSON.parse(localStorage.getItem('blcts_user') || 'null'); } catch { return null; }
-  });
+  const [showLanding, setShowLanding] = useState(() => !localStorage.getItem('blcts_seen_landing'));
+  const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [isDark, setIsDark] = useState(() => localStorage.getItem('blcts_dark') === 'true');
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
-  const [projects, setProjects] = useState<Project[]>(() => {
-    try { return JSON.parse(localStorage.getItem('blcts_projects') || '[]'); } catch { return []; }
-  });
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-
-  useEffect(() => {
-    localStorage.setItem('blcts_projects', JSON.stringify(projects));
-  }, [projects]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
     localStorage.setItem('blcts_dark', String(isDark));
   }, [isDark]);
 
-  function handleLogin(u: User) {
-    setUser(u);
+  // Restore session on mount + subscribe to auth changes.
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      if (data.session?.user) {
+        const mapped = mapSupabaseUser(data.session.user) as User;
+        setUser(mapped);
+      }
+      setAuthReady(true);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      (async () => {
+        if (session?.user) {
+          const mapped = mapSupabaseUser(session.user) as User;
+          setUser(mapped);
+        } else {
+          setUser(null);
+          setProjects([]);
+          setSelectedProjectId(null);
+        }
+      })();
+    });
+
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  const loadProjects = useCallback(async () => {
+    if (!user) return;
+    setProjectsLoading(true);
+    try {
+      const rows = await fetchProjects();
+      setProjects(rows);
+    } catch {
+      setProjects([]);
+    } finally {
+      setProjectsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    void loadProjects();
+  }, [loadProjects]);
+
+  function handleAuthed() {
+    // onAuthStateChange will set the user; this just dismisses the landing/auth screen.
     setShowLanding(false);
-    localStorage.setItem('blcts_user', JSON.stringify(u));
-    setActiveTab('dashboard');
+    localStorage.setItem('blcts_seen_landing', '1');
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await signOut();
+    } catch {
+      // ignore
+    }
     setUser(null);
-    localStorage.removeItem('blcts_user');
-    setShowLanding(true);
+    setProjects([]);
+    setSelectedProjectId(null);
     setActiveTab('dashboard');
   }
 
@@ -80,59 +127,117 @@ function App() {
     setActiveTab('estimation');
   }
 
-  function handleBlueprintConfirm(result: {
+  async function handleBlueprintConfirm(result: {
     floorAreaPerFloor: number;
     floors: number;
     buildingType: string;
     constructionStandard: string;
     county: string;
     blueprintAnalysis: BlueprintAnalysisResult;
+    blueprintFileName?: string;
   }) {
     if (!selectedProjectId) return;
-    setProjects(prev => prev.map(p => p.id === selectedProjectId ? {
-      ...p,
+    const target = projects.find(p => p.id === selectedProjectId);
+    if (!target) return;
+    const updated: Project = {
+      ...target,
       floorAreaPerFloor: result.floorAreaPerFloor,
       floors: result.floors,
       buildingType: result.buildingType as Project['buildingType'],
       constructionStandard: result.constructionStandard as Project['constructionStandard'],
       county: result.county,
       blueprintAnalysis: result.blueprintAnalysis,
+      blueprintFileName: result.blueprintFileName,
       updatedAt: new Date().toISOString(),
-    } : p));
+    };
+    setProjects(prev => prev.map(p => p.id === selectedProjectId ? updated : p));
+    try {
+      await updateProject(updated);
+    } catch {
+      // surfaced via toast in the component
+    }
     setActiveTab('estimation');
   }
 
-  function handleProjectUpdate(updated: Project) {
+  async function handleProjectUpdate(updated: Project) {
     setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
+    try {
+      await updateProject(updated);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function handleProjectsChange(next: Project[]) {
+    const prev = projects;
+    setProjects(next);
+
+    // Determine created/deleted and persist.
+    const created = next.filter(p => !prev.some(o => o.id === p.id));
+    const deleted = prev.filter(p => !next.some(n => n.id === p.id));
+
+    for (const p of created) {
+      try {
+        const saved = await createProject({
+          id: p.id,
+          name: p.name,
+          location: p.location,
+          county: p.county,
+          buildingType: p.buildingType,
+          constructionStandard: p.constructionStandard,
+          floorAreaPerFloor: p.floorAreaPerFloor,
+          floors: p.floors,
+          blueprintAnalysis: p.blueprintAnalysis,
+          blueprintFileName: p.blueprintFileName,
+          status: p.status ?? 'Planning',
+        } as Project);
+        setProjects(list => list.map(x => x.id === p.id ? saved : x));
+      } catch {
+        // ignore — surfaced in UI
+      }
+    }
+    for (const p of deleted) {
+      try {
+        await deleteProject(p.id);
+      } catch {
+        // ignore
+      }
+    }
   }
 
   const selectedProject = projects.find(p => p.id === selectedProjectId) ?? projects[0] ?? null;
 
-  if (showLanding) {
+  if (!authReady) {
+    return <Loading message="Loading…" />;
+  }
+
+  if (showLanding && !user) {
     return (
       <Suspense fallback={<Loading message="Loading…" />}>
         <LandingPageNew
           isDark={isDark}
           onToggleDark={() => setIsDark(d => !d)}
-          onLogin={() => setShowLanding(false)}
-          onGetStarted={() => setShowLanding(false)}
+          onLogin={() => { setShowLanding(false); localStorage.setItem('blcts_seen_landing', '1'); }}
+          onGetStarted={() => { setShowLanding(false); localStorage.setItem('blcts_seen_landing', '1'); }}
         />
       </Suspense>
     );
   }
 
   if (!user) {
-    return <AuthScreen onLogin={handleLogin} />;
+    return <AuthScreen onAuthed={handleAuthed} />;
   }
+
+  const typedUser = user;
 
   const ADMIN_ONLY_TABS: Tab[] = ['users', 'prices', 'regions', 'system'];
   const OWNER_ONLY_TABS: Tab[] = ['blueprint', 'estimation'];
   const FM_ONLY_TABS: Tab[] = ['maintenance'];
 
   function canAccessTab(tab: Tab): boolean {
-    if (ADMIN_ONLY_TABS.includes(tab) && user!.role !== 'Administrator') return false;
-    if (OWNER_ONLY_TABS.includes(tab) && user!.role !== 'Building Owner') return false;
-    if (FM_ONLY_TABS.includes(tab) && user!.role !== 'Facility Manager') return false;
+    if (ADMIN_ONLY_TABS.includes(tab) && typedUser.role !== 'Administrator') return false;
+    if (OWNER_ONLY_TABS.includes(tab) && typedUser.role !== 'Building Owner') return false;
+    if (FM_ONLY_TABS.includes(tab) && typedUser.role !== 'Facility Manager') return false;
     return true;
   }
 
@@ -171,7 +276,7 @@ function App() {
       case 'dashboard':
         return (
           <Dashboard
-            user={user!}
+            user={typedUser}
             projects={projects}
             onNavigate={handleTabChange}
           />
@@ -181,8 +286,8 @@ function App() {
         return (
           <ProjectsPage
             projects={projects}
-            currentUser={user!}
-            onProjectsChange={setProjects}
+            currentUser={typedUser}
+            onProjectsChange={handleProjectsChange}
             onSelectProject={setSelectedProjectId}
             onUploadBlueprint={handleUploadBlueprint}
             onViewEstimate={handleViewEstimate}
@@ -212,7 +317,7 @@ function App() {
           <MaintenancePage
             projectId={selectedProject.id}
             projectName={selectedProject.name}
-            currentUser={user!}
+            currentUser={typedUser}
           />
         ) : <NoProjectSelected tab="Maintenance Management" />;
 
@@ -234,7 +339,7 @@ function App() {
         ) : <NoProjectSelected tab="Reports" />;
 
       case 'users':
-        return <UserManagementPage />;
+        return <UserManagementPage currentUser={typedUser} />;
 
       case 'system':
         return <SystemSettingsPage />;
@@ -256,151 +361,61 @@ function App() {
     >
       <div className="animate-fade-in">
         <Suspense fallback={<Loading message="Loading module…" />}>
-          {renderContent()}
+          {projectsLoading && activeTab === 'projects' ? (
+            <Loading message="Loading projects…" />
+          ) : (
+            renderContent()
+          )}
         </Suspense>
       </div>
     </Layout>
   );
 }
 
-function UserManagementPage() {
-  const DEMO_USERS = [
-    { id: 'demo-admin-001', name: 'Admin User', email: 'admin@blcts.ke', role: 'Administrator', organization: 'BLCTS HQ', status: 'Active' },
-    { id: 'demo-owner-001', name: 'James Kariuki', email: 'owner@blcts.ke', role: 'Building Owner', organization: 'Nairobi Properties Ltd', status: 'Active' },
-    { id: 'demo-fm-001', name: 'Grace Wanjiku', email: 'fm@blcts.ke', role: 'Facility Manager', organization: 'FM Services Kenya', status: 'Active' },
-  ];
-
-  const roleColors: Record<string, string> = {
-    Administrator: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-900/40',
-    'Building Owner': 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/40',
-    'Facility Manager': 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/40',
-  };
-
+function UserManagementPage({ currentUser }: { currentUser: User }) {
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">User Management</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage system users and role-based access permissions.</p>
-        </div>
-        <button
-          disabled
-          className="inline-flex items-center gap-2 bg-emerald-600/50 text-white text-sm font-semibold px-4 py-2.5 rounded-xl cursor-not-allowed opacity-60"
-          title="User creation is managed by the administrator"
-        >
-          + Invite User
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">User Management</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Your account details.</p>
       </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: 'Total Users', value: DEMO_USERS.length, color: 'text-emerald-600 dark:text-emerald-400' },
-          { label: 'Active Now', value: DEMO_USERS.length, color: 'text-emerald-600 dark:text-emerald-400' },
-          { label: 'Roles Defined', value: 3, color: 'text-violet-600 dark:text-violet-400' },
-        ].map(s => (
-          <div key={s.label} className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] p-4 text-center">
-            <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{s.label}</p>
+      <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/6">
+          <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Current Account</h2>
+        </div>
+        <div className="px-5 py-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold text-sm flex items-center justify-center flex-shrink-0">
+            {currentUser.name.charAt(0)}
           </div>
-        ))}
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/6">
-          <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">System Accounts</h2>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{currentUser.name}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{currentUser.email} · {currentUser.organization ?? 'Independent'}</p>
+          </div>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/40">
+            {currentUser.role}
+          </span>
         </div>
-        <div className="divide-y divide-slate-100 dark:divide-white/6">
-          {DEMO_USERS.map(u => (
-            <div key={u.id} className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-white/3 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-bold text-sm flex items-center justify-center flex-shrink-0">
-                {u.name.charAt(0)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{u.name}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{u.email} · {u.organization}</p>
-              </div>
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${roleColors[u.role]}`}>
-                {u.role}
-              </span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-                {u.status}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/6">
-          <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Role Permissions Matrix</h2>
-        </div>
-        <div className="p-5 overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 dark:border-white/8">
-                <th className="text-left pb-2 text-slate-500 dark:text-slate-400 font-medium">Permission</th>
-                <th className="text-center pb-2 text-violet-600 dark:text-violet-400 font-semibold">Admin</th>
-                <th className="text-center pb-2 text-blue-600 dark:text-blue-400 font-semibold">Owner</th>
-                <th className="text-center pb-2 text-emerald-600 dark:text-emerald-400 font-semibold">FM</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ['Manage Users', true, false, false],
-                ['Configure Material Prices', true, false, false],
-                ['Set Regional Pricing', true, false, false],
-                ['System Settings', true, false, false],
-                ['Create Projects', true, true, false],
-                ['Upload Blueprints', false, true, false],
-                ['Run Cost Estimation', false, true, false],
-                ['View BOQ & Reports', true, true, true],
-                ['Create Maintenance Tasks', false, false, true],
-                ['Manage Work Orders', false, false, true],
-                ['Record Actual Costs', false, false, true],
-              ].map(([label, admin, owner, fm]) => (
-                <tr key={String(label)} className="border-b border-slate-100 dark:border-white/6 last:border-0">
-                  <td className="py-2 text-slate-700 dark:text-slate-300">{String(label)}</td>
-                  <td className="py-2 text-center">{admin ? '✓' : '—'}</td>
-                  <td className="py-2 text-center">{owner ? '✓' : '—'}</td>
-                  <td className="py-2 text-center">{fm ? '✓' : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/50 dark:bg-blue-950/20 p-4">
-        <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-          Demo accounts: admin@blcts.ke, owner@blcts.ke, fm@blcts.ke
-        </p>
       </div>
     </div>
   );
 }
 
 function SystemSettingsPage() {
-  const auditEvents = useMemo(() => [
-    { time: new Date().toLocaleString(), action: 'Session started', user: 'Administrator', type: 'auth' },
-    { time: new Date(Date.now() - 3600000).toLocaleString(), action: 'Material price database viewed', user: 'Administrator', type: 'data' },
-    { time: new Date(Date.now() - 7200000).toLocaleString(), action: 'Regional pricing updated — Nairobi', user: 'Administrator', type: 'update' },
-  ], []);
   const systemItems = [
     { label: 'Database', value: 'Supabase PostgreSQL', status: 'Connected', color: 'green' },
-    { label: 'AI Engine', value: 'Gemini 2.5 Flash', status: 'Configured', color: 'blue' },
+    { label: 'AI Engine', value: 'Gemini 2.5 Flash (edge function)', status: 'Configured', color: 'blue' },
     { label: 'Regional Pricing', value: '10 Counties loaded', status: 'Live', color: 'green' },
     { label: 'Materials Database', value: '44 items', status: 'Synced', color: 'green' },
-    { label: 'BOQ Engine', value: 'v2.0 — QS Standard', status: 'Ready', color: 'green' },
+    { label: 'BOQ Engine', value: 'v2.0 — SMM Standard', status: 'Ready', color: 'green' },
     { label: 'Lifecycle Model', value: '30-year, 6% inflation', status: 'Active', color: 'green' },
-    { label: 'BOQ Estimates', value: 'Persisted to Supabase', status: 'Active', color: 'green' },
-    { label: 'Maintenance Tasks', value: 'Persisted to Supabase', status: 'Active', color: 'green' },
+    { label: 'Authentication', value: 'Supabase email/password', status: 'Active', color: 'green' },
   ];
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">System Settings</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Platform configuration, integrations, and system health.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Platform configuration and system health.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -426,7 +441,7 @@ function SystemSettingsPage() {
         <div className="p-5 space-y-3">
           {[
             ['Application', 'Building Lifecycle Cost Tracking System (BLCTS)'],
-            ['Version', '2.0.0 — Presentation Build'],
+            ['Version', '2.0.0'],
             ['Frontend', 'React 19 + TypeScript + Vite + Tailwind CSS 4'],
             ['Backend', 'Supabase (PostgreSQL + Row Level Security)'],
             ['AI Integration', 'Google Gemini 2.5 Flash — Blueprint Analysis'],
@@ -437,23 +452,6 @@ function SystemSettingsPage() {
             <div key={k} className="flex gap-4 text-sm">
               <span className="w-36 flex-shrink-0 text-slate-500 dark:text-slate-400 font-medium">{k}</span>
               <span className="text-slate-800 dark:text-slate-100">{v}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/6">
-          <h2 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Recent Audit Events</h2>
-        </div>
-        <div className="divide-y divide-slate-100 dark:divide-white/6">
-          {auditEvents.map((log, i) => (
-            <div key={i} className="flex items-center gap-3 px-5 py-3">
-              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${log.type === 'auth' ? 'bg-blue-400' : log.type === 'update' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-slate-700 dark:text-slate-300">{log.action}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{log.user} · {log.time}</p>
-              </div>
             </div>
           ))}
         </div>

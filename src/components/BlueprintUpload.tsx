@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import type { Project, BlueprintAnalysisResult, DetectedRoom, BuildingType, ConstructionStandard } from '../types';
-import { Upload, FileImage, ArrowLeft, ArrowRight, Cpu, CircleCheck as CheckCircle2, CircleAlert as AlertCircle, X } from 'lucide-react';
+import type { Project, BlueprintAnalysisResult, BuildingType, ConstructionStandard } from '../types';
+import { Upload, FileImage, ArrowLeft, ArrowRight, Cpu, CircleCheck as CheckCircle2, CircleAlert as AlertCircle, X, RotateCcw } from 'lucide-react';
 import { useToast } from './ui/Toast';
 import { analyzeBlueprint } from '../lib/gemini';
 
@@ -13,6 +13,7 @@ interface Props {
     constructionStandard: string;
     county: string;
     blueprintAnalysis: BlueprintAnalysisResult;
+    blueprintFileName?: string;
   }) => void;
   onBack: () => void;
 }
@@ -25,10 +26,11 @@ const inputBase = 'w-full px-3.5 py-2.5 rounded-xl border bg-white dark:bg-[#0f1
 const labelBase = 'block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5';
 
 export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
-  const [step, setStep] = useState<'upload' | 'analyzing' | 'review'>('upload');
+  const [step, setStep] = useState<'upload' | 'analyzing' | 'review' | 'error'>('upload');
   const [fileName, setFileName] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [analysis, setAnalysis] = useState<BlueprintAnalysisResult | null>(null);
+  const [analysisError, setAnalysisError] = useState('');
   const [editable, setEditable] = useState({
     floorAreaPerFloor: 0,
     floors: 1,
@@ -42,6 +44,10 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
 
   function handleFile(file: File) {
     if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      show('File exceeds 10MB limit', 'error');
+      return;
+    }
     setFileName(file.name);
     show(`File "${file.name}" uploaded`, 'success');
     const reader = new FileReader();
@@ -49,70 +55,51 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
       fileDataRef.current = { base64: String(reader.result), mimeType: file.type, name: file.name };
       void runAnalysis();
     };
+    reader.onerror = () => {
+      setAnalysisError('Failed to read the file. Please try a different file.');
+      setStep('error');
+    };
     reader.readAsDataURL(file);
   }
 
   async function runAnalysis() {
     setStep('analyzing');
+    setAnalysisError('');
     const fileData = fileDataRef.current;
-    let result: BlueprintAnalysisResult;
 
-    if (fileData) {
-      try {
-        result = await analyzeBlueprint(fileData.base64, fileData.mimeType, fileData.name);
-      } catch {
-        result = fallbackResult();
-      }
-    } else {
-      result = fallbackResult();
+    if (!fileData) {
+      setAnalysisError('No file selected. Please upload a blueprint first.');
+      setStep('error');
+      return;
     }
 
-    // If the AI returned null metrics, fall back to editable defaults so the user can proceed.
-    const floorAreaPerFloor = result.estimatedFloorArea ?? result.floorAreaPerFloor ?? 0;
-    const floors = result.floors ?? 1;
-    const buildingType = (result.buildingType as BuildingType) ?? 'Residential';
-    const constructionStandard = (result.constructionStandard as ConstructionStandard) ?? 'Standard';
-    const county = result.county ?? (project.county || 'Nairobi');
+    try {
+      const result = await analyzeBlueprint(fileData.base64, fileData.mimeType, fileData.name);
 
-    const merged: BlueprintAnalysisResult = {
-      ...result,
-      floorAreaPerFloor,
-      constructionStandard,
-      county,
-      detectedRooms: result.detectedRooms ?? [],
-      notes: result.notes ?? result.observations[0],
-    };
+      const floorAreaPerFloor = result.estimatedFloorArea ?? project.floorAreaPerFloor ?? 0;
+      const floors = result.floors ?? project.floors ?? 1;
+      const buildingType = (result.buildingType as BuildingType) ?? project.buildingType ?? 'Residential';
+      const constructionStandard = project.constructionStandard ?? 'Standard';
+      const county = result.county ?? project.county ?? 'Nairobi';
 
-    setAnalysis(merged);
-    setEditable({ floorAreaPerFloor, floors, buildingType, constructionStandard, county });
-    setStep('review');
-    show(result.isFallback ? 'Using estimated defaults — AI analysis unavailable' : 'AI analysis complete', result.isFallback ? 'error' : 'success');
-  }
+      const merged: BlueprintAnalysisResult = {
+        ...result,
+        floorAreaPerFloor,
+        constructionStandard,
+        county,
+        detectedRooms: result.detectedRooms ?? [],
+        notes: result.notes ?? result.observations[0],
+      };
 
-  function fallbackResult(): BlueprintAnalysisResult {
-    const rooms: DetectedRoom[] = [
-      { label: 'Bedroom', count: 4, areaSqm: 14 },
-      { label: 'Bathroom', count: 2, areaSqm: 5 },
-      { label: 'Kitchen', count: 1, areaSqm: 12 },
-      { label: 'Living Room', count: 1, areaSqm: 25 },
-      { label: 'Dining Room', count: 1, areaSqm: 15 },
-      { label: 'Store', count: 1, areaSqm: 4 },
-    ];
-    const totalArea = rooms.reduce((sum, r) => sum + r.areaSqm * r.count, 0);
-    const floorAreaPerFloor = Math.round(totalArea * 1.15);
-    return {
-      estimatedFloorArea: floorAreaPerFloor,
-      floors: 3,
-      buildingType: 'Residential',
-      confidence: null,
-      observations: ['Using estimated defaults — AI analysis unavailable. Review and adjust parameters manually.'],
-      isFallback: true,
-      floorAreaPerFloor,
-      constructionStandard: 'Standard',
-      county: project.county || 'Nairobi',
-      detectedRooms: rooms,
-      notes: 'Using estimated defaults — AI analysis unavailable. Review and adjust parameters manually.',
-    };
+      setAnalysis(merged);
+      setEditable({ floorAreaPerFloor, floors, buildingType, constructionStandard, county });
+      setStep('review');
+      show('AI analysis complete', 'success');
+    } catch (err) {
+      setAnalysisError(err instanceof Error ? err.message : 'AI analysis failed. Please try again.');
+      setStep('error');
+      show('AI analysis failed', 'error');
+    }
   }
 
   function handleConfirm() {
@@ -123,6 +110,7 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
       constructionStandard: editable.constructionStandard,
       county: editable.county,
       blueprintAnalysis: analysis!,
+      blueprintFileName: fileName || undefined,
     });
   }
 
@@ -144,7 +132,7 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
       <div className="flex items-center gap-2">
         {['Upload', 'AI Analysis', 'Review'].map((label, i) => {
           const stepNum = i + 1;
-          const currentStep = step === 'upload' ? 1 : step === 'analyzing' ? 2 : 3;
+          const currentStep = step === 'upload' ? 1 : step === 'analyzing' ? 2 : step === 'review' ? 3 : 2;
           const isActive = stepNum === currentStep;
           const isDone = stepNum < currentStep;
           return (
@@ -195,11 +183,32 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
             <Cpu className="w-8 h-8 text-violet-600 dark:text-violet-400 animate-pulse" />
           </div>
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">AI Analysis in Progress</p>
-          <p className="text-xs text-slate-400 mb-4">Gemini is extracting building parameters from your blueprint…</p>
+          <p className="text-xs text-slate-400 mb-4">Gemini 2.5 Flash is extracting building parameters from your blueprint…</p>
           <div className="flex items-center justify-center gap-2">
             {[0, 1, 2].map(i => (
               <div key={i} className="w-2 h-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Error step */}
+      {step === 'error' && (
+        <div className="rounded-2xl border border-rose-200 dark:border-rose-800/40 bg-rose-50/50 dark:bg-rose-950/20 p-8 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-7 h-7 text-rose-600 dark:text-rose-400" />
+          </div>
+          <p className="text-sm font-semibold text-rose-700 dark:text-rose-300 mb-1">Analysis Failed</p>
+          <p className="text-xs text-rose-600/80 dark:text-rose-400/80 mb-5 max-w-md mx-auto">{analysisError}</p>
+          <div className="flex items-center justify-center gap-3">
+            <button onClick={() => setStep('upload')} className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-white/5 transition">
+              <X className="w-4 h-4" />
+              Choose Different File
+            </button>
+            <button onClick={() => void runAnalysis()} className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition shadow-sm">
+              <RotateCcw className="w-4 h-4" />
+              Retry Analysis
+            </button>
           </div>
         </div>
       )}
@@ -214,29 +223,45 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
             </div>
             <div className="flex-1">
               <p className="text-sm font-semibold text-violet-700 dark:text-violet-300">
-                {analysis.isFallback ? 'Estimated Defaults — AI Analysis Unavailable' : `AI Analysis Complete — ${analysis.confidence != null ? Math.round(analysis.confidence * 100) : 0}% confidence`}
+                AI Analysis Complete — {analysis.confidence != null ? Math.round(analysis.confidence * 100) : 0}% confidence
               </p>
               <p className="text-xs text-violet-600/70 dark:text-violet-400/70 mt-0.5">{analysis.notes ?? analysis.observations[0]}</p>
             </div>
           </div>
 
-          {/* Detected rooms */}
-          <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-white/8">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Detected Rooms</h3>
-            </div>
-            <div className="divide-y divide-slate-100 dark:divide-white/6">
-              {(analysis.detectedRooms ?? []).map((r, i) => (
-                <div key={i} className="flex items-center justify-between px-5 py-3">
-                  <span className="text-sm text-slate-700 dark:text-slate-300">{r.label}</span>
-                  <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-                    <span>{r.count} unit{r.count > 1 ? 's' : ''}</span>
-                    <span>{r.areaSqm} m² each</span>
-                    <span className="font-semibold text-slate-700 dark:text-slate-200">{(r.areaSqm * r.count).toLocaleString()} m²</span>
-                  </div>
+          {/* AI-extracted metrics */}
+          <div className="rounded-2xl border border-slate-200 dark:border-white/8 bg-white dark:bg-[#0f1629] p-5">
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-3">Extracted Parameters</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Floor Area', value: analysis.estimatedFloorArea != null ? `${analysis.estimatedFloorArea.toLocaleString()} m²` : 'Not detected' },
+                { label: 'Floors', value: analysis.floors != null ? String(analysis.floors) : 'Not detected' },
+                { label: 'Building Type', value: analysis.buildingType ?? 'Not detected' },
+                { label: 'Roof Type', value: analysis.roofType ?? 'Not detected' },
+                { label: 'Rooms', value: analysis.roomCount != null ? String(analysis.roomCount) : 'Not detected' },
+                { label: 'Bedrooms', value: analysis.bedrooms != null ? String(analysis.bedrooms) : 'Not detected' },
+                { label: 'Bathrooms', value: analysis.bathrooms != null ? String(analysis.bathrooms) : 'Not detected' },
+                { label: 'Drawing Scale', value: analysis.drawingScale ?? 'Not detected' },
+              ].map(m => (
+                <div key={m.label} className="bg-slate-50 dark:bg-white/5 rounded-xl p-3">
+                  <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase">{m.label}</p>
+                  <p className="text-xs mt-0.5 font-bold text-slate-800 dark:text-slate-100">{m.value}</p>
                 </div>
               ))}
             </div>
+            {analysis.observations.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/8">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-2">Observations</p>
+                <ul className="space-y-1.5">
+                  {analysis.observations.map((o, i) => (
+                    <li key={i} className="text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                      <span className="w-1 h-1 rounded-full bg-violet-400 mt-1.5 flex-shrink-0" />
+                      {o}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Editable parameters */}
@@ -245,7 +270,7 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className={labelBase}>Floor Area per Floor (m²)</label>
-                <input type="number" min="0" value={editable.floorAreaPerFloor} onChange={e => setEditable(p => ({ ...p, floorAreaPerFloor: Number(e.target.value) }))} className={inputBase} />
+                <input type="number" min="0" value={editable.floorAreaPerFloor || ''} onChange={e => setEditable(p => ({ ...p, floorAreaPerFloor: Number(e.target.value) }))} className={inputBase} />
               </div>
               <div>
                 <label className={labelBase}>Number of Floors</label>
@@ -278,7 +303,7 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
               <X className="w-4 h-4" />
               Re-upload
             </button>
-            <button onClick={handleConfirm} className="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition shadow-sm hover:shadow-md">
+            <button onClick={handleConfirm} disabled={editable.floorAreaPerFloor <= 0} className="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/40 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition shadow-sm hover:shadow-md">
               Confirm & Proceed to Cost Estimation
               <ArrowRight className="w-4 h-4" />
             </button>

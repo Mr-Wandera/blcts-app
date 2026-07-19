@@ -151,15 +151,7 @@ export default function CostEstimationPage({ project, onGoToBlueprint, onProject
       </div>
 
       {project.blueprintAnalysis ? (
-        <>
-          <BlueprintAnalysisBanner analysis={project.blueprintAnalysis} />
-          {project.blueprintAnalysis.isFallback && (
-            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3 flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-              <span>Estimate will use estimated blueprint defaults — configure Gemini for AI-powered analysis.</span>
-            </div>
-          )}
-        </>
+        <BlueprintAnalysisBanner analysis={project.blueprintAnalysis} />
       ) : (
         <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -274,15 +266,15 @@ function BlueprintAnalysisBanner({ analysis }: { analysis: NonNullable<Project['
   const conf = analysis.confidence;
 
   return (
-    <div className={`rounded-xl border p-4 ${analysis.isFallback ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
+    <div className="rounded-xl border p-4 bg-emerald-50 border-emerald-200">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          {analysis.isFallback ? <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" /> : <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />}
+          <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
           <div>
-            <p className={`text-sm font-semibold ${analysis.isFallback ? 'text-amber-800' : 'text-emerald-800'}`}>
-              {analysis.isFallback ? 'Manual entry tracking engine active' : 'Gemini 2.5 Flash drawing analysis active'}
+            <p className="text-sm font-semibold text-emerald-800">
+              Gemini 2.5 Flash drawing analysis active
             </p>
-            {conf !== null && !analysis.isFallback && (
+            {conf !== null && (
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-xs text-emerald-700 font-medium">Audit certainty index: {Math.round(conf * 100)}%</span>
               </div>

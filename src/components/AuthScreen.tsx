@@ -1,39 +1,16 @@
 import { useState } from 'react';
-import { Building2, Eye, EyeOff, LogIn, UserPlus, Lock } from 'lucide-react';
-import type { User, UserRole } from '../types';
-
-const DEMO_ACCOUNTS: (User & { password: string })[] = [
-  { id: 'demo-admin-001', name: 'Admin User', email: 'admin@blcts.ke', password: 'admin123', role: 'Administrator', organization: 'BLCTS HQ' },
-  { id: 'demo-owner-001', name: 'James Kariuki', email: 'owner@blcts.ke', password: 'owner123', role: 'Building Owner', organization: 'Nairobi Properties Ltd' },
-  { id: 'demo-fm-001', name: 'Grace Wanjiku', email: 'fm@blcts.ke', password: 'fm123', role: 'Facility Manager', organization: 'FM Services Kenya' },
-];
-
-const ROLE_STYLES: Record<string, { border: string; badge: string; dot: string }> = {
-  Administrator: {
-    border: 'border-violet-200 dark:border-violet-800/50 hover:border-violet-300 dark:hover:border-violet-700',
-    badge: 'bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300',
-    dot: 'bg-violet-500',
-  },
-  'Building Owner': {
-    border: 'border-blue-200 dark:border-blue-800/50 hover:border-blue-300 dark:hover:border-blue-700',
-    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
-    dot: 'bg-blue-500',
-  },
-  'Facility Manager': {
-    border: 'border-emerald-200 dark:border-emerald-800/50 hover:border-emerald-300 dark:hover:border-emerald-700',
-    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
-    dot: 'bg-emerald-500',
-  },
-};
+import { Building2, Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
+import type { UserRole } from '../types';
+import { signIn, signUp } from '../lib/supabase';
 
 const inputBase = 'w-full px-3.5 py-2.5 rounded-xl border bg-white dark:bg-[#0f1629] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition';
 const labelBase = 'block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5';
 
 interface Props {
-  onLogin: (user: User) => void;
+  onAuthed: () => void;
 }
 
-export function AuthScreen({ onLogin }: Props) {
+export function AuthScreen({ onAuthed }: Props) {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,47 +22,41 @@ export function AuthScreen({ onLogin }: Props) {
   const [role, setRole] = useState<UserRole>('Building Owner');
   const [organization, setOrganization] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setTimeout(() => {
-      const match = DEMO_ACCOUNTS.find(
-        a => a.email.toLowerCase() === email.trim().toLowerCase() && a.password === password
-      );
-      if (!match) {
-        setError('Invalid email or password.');
-        setLoading(false);
-        return;
-      }
-      const user: User = { id: match.id, name: match.name, email: match.email, role: match.role, organization: match.organization };
-      localStorage.setItem('blcts_user', JSON.stringify(user));
-      onLogin(user);
+    try {
+      await signIn(email.trim(), password);
+      onAuthed();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign in failed. Check your credentials.');
+    } finally {
       setLoading(false);
-    }, 400);
-  };
+    }
+  }
 
-  const handleSignup = (e: React.FormEvent) => {
+  async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     if (!name.trim() || !email.trim() || !password) {
       setError('All fields are required.');
       return;
     }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
     setLoading(true);
-    setTimeout(() => {
-      const user: User = {
-        id: `user-${Date.now()}`,
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        role,
-        organization: organization.trim() || 'Independent',
-      };
-      localStorage.setItem('blcts_user', JSON.stringify(user));
-      onLogin(user);
+    try {
+      await signUp(email.trim().toLowerCase(), password, name.trim(), role, organization.trim() || 'Independent');
+      onAuthed();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign up failed.');
+    } finally {
       setLoading(false);
-    }, 500);
-  };
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0a0f1e] p-4 relative overflow-hidden">
@@ -104,9 +75,6 @@ export function AuthScreen({ onLogin }: Props) {
           </div>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">BLCTS</h1>
           <p className="text-xs text-slate-500 dark:text-slate-500 tracking-widest uppercase mt-1">Building Lifecycle Cost Intelligence</p>
-          <span className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">
-            <Lock className="w-2.5 h-2.5" /> Demo Mode
-          </span>
         </div>
 
         <div className="bg-white dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl p-8">
@@ -121,7 +89,7 @@ export function AuthScreen({ onLogin }: Props) {
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400">
               {mode === 'login'
-                ? 'Use your credentials or select a demo account below'
+                ? 'Enter your credentials to access your projects.'
                 : 'Join BLCTS as a Building Owner or Facility Manager'}
             </p>
           </div>
@@ -211,7 +179,7 @@ export function AuthScreen({ onLogin }: Props) {
                     required
                     value={password}
                     onChange={e => { setPassword(e.target.value); setError(''); }}
-                    placeholder="••••••••"
+                    placeholder="At least 6 characters"
                     className={inputBase + ' pr-10'}
                   />
                   <button type="button" onClick={() => setShowPassword(p => !p)}
@@ -282,41 +250,6 @@ export function AuthScreen({ onLogin }: Props) {
             </button>
           </div>
         </div>
-
-        {mode === 'login' && (
-          <div className="mt-6">
-            <p className="text-center text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">
-              Demo Accounts — Click to autofill
-            </p>
-            <div className="grid grid-cols-3 gap-2.5">
-              {DEMO_ACCOUNTS.map(account => {
-                const styles = ROLE_STYLES[account.role];
-                return (
-                  <button key={account.id} type="button"
-                    onClick={() => { setEmail(account.email); setPassword(account.password); setError(''); }}
-                    className={`group relative flex flex-col items-start gap-2 p-3 rounded-xl bg-white dark:bg-white/4 border ${styles.border} transition-all hover:bg-slate-50 dark:hover:bg-white/6 text-left`}
-                  >
-                    <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${styles.dot}`} />
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${styles.badge}`}>
-                      {account.role === 'Administrator' ? 'Admin' : account.role === 'Building Owner' ? 'Owner' : 'FM'}
-                    </span>
-                    <div className="w-full">
-                      <p className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 truncate group-hover:text-slate-900 dark:group-hover:text-white transition">{account.email}</p>
-                      <p className="text-[9px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 tracking-wide">{account.password}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-5 flex items-center gap-2 justify-center">
-              <Lock className="w-3 h-3 text-slate-300 dark:text-slate-600" />
-              <p className="text-[10px] text-slate-400 dark:text-slate-600 text-center">
-                Administrator accounts are managed by the system admin
-              </p>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

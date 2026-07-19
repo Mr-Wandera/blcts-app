@@ -38,7 +38,6 @@ export interface BlueprintAnalysisResult {
   buildingType: string | null;
   confidence: number | null; // 0.00–1.00
   observations: string[];
-  isFallback: boolean;
   roomCount?: number | null;
   bedrooms?: number | null;
   bathrooms?: number | null;
