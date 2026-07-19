@@ -82,9 +82,9 @@ export default function LandingPageNew({ isDark, onToggleDark, onLogin, onGetSta
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={onGetStarted}
-              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3.5 rounded-xl transition shadow-lg shadow-emerald-600/25 hover:-translate-y-px"
+              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-3.5 rounded-xl transition shadow-lg shadow-emerald-600/25 hover:-translate-y-px"
             >
-              Start Free Trial
+              Get Started
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
