@@ -1,13 +1,27 @@
+<<<<<<< HEAD
 import { useState } from 'react';
 import type { Project } from '../types';
 import { ArrowLeft, FileText, Download, Building2, Layers, MapPin, DollarSign, TrendingUp, Calendar, CircleCheck as CheckCircle2, Printer } from 'lucide-react';
 import { useToast } from './ui/Toast';
+=======
+// src/components/ReportsPage.tsx (Partial snippet showing correct imports and top-level function positioning)
+import React, { useState, useEffect } from 'react';
+import { 
+  FileText, Download, Printer, ChartBar as BarChart3, Building2, DollarSign, 
+  TrendingUp, Calendar, MapPin, Loader as Loader2, Table, ChevronDown, ChevronUp, Layers, Shield 
+} from 'lucide-react';
+import { Project, BOQEstimate } from '../types';
+import { fetchBOQHistory } from '../lib/supabase';
+import { fmtKSh, fmtKShFull, fmtDate, fmtPct } from '../lib/format';
+import { Badge } from './ui/Badge';
+>>>>>>> e15734d (chore(core): stabilize SMM estimation pipeline and resolve type contracts)
 
 interface Props {
   project: Project;
   onGoToEstimation: () => void;
 }
 
+<<<<<<< HEAD
 function formatKsh(n: number): string {
   return 'KSh ' + Math.round(n).toLocaleString('en-KE');
 }
@@ -189,3 +203,40 @@ export default function ReportsPage({ project, onGoToEstimation }: Props) {
     </div>
   );
 }
+=======
+// Ensure downloadCSV function is declared before sub-components consume it
+function downloadCSV(estimate: BOQEstimate) {
+  const rows: string[][] = [
+    ['BLCTS PORTFOLIO EXECUTIVE ENGINEERING COST STATEMENT'],
+    ['Project Title Token', estimate.projectName],
+    ['Zoning County Key', estimate.county],
+    ['Structural Classification', estimate.buildingType],
+    ['Specification Level Standard', estimate.constructionStandard],
+    ['Gross Floor Area (GFA)', `${estimate.gfa.toLocaleString()} m²`],
+    ['Storeys Level Count', estimate.floors.toString()],
+    ['Calibrated Unit Base Rate', `${estimate.costPerSqm} KSh/m²`],
+    ['Compilation Logged Timestamp', fmtDate(estimate.createdAt)],
+    [],
+    ['STANDARD METHOD OF MEASUREMENT (SMM) ITEM BREAKDOWN'],
+    ['Item Description Section', 'Calculated Quantity', 'Unit Metric', 'Unit Rate (KSh)', 'Gross Amount (KSh)'],
+    ...estimate.lineItems.map((li) => [
+      li.section,
+      li.quantity.toFixed(1),
+      li.unit,
+      li.unitRate.toString(),
+      li.amount.toString(),
+    ])
+  ];
+
+  const csvContent = rows.map((r) => r.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const anchorElement = document.createElement('a');
+  anchorElement.href = url;
+  anchorElement.download = `BLCTS_QS_REPORT_${estimate.projectName.replace(/\s+/g, '_')}.csv`;
+  anchorElement.click();
+  URL.revokeObjectURL(url);
+}
+
+// ... remaining ReportContent, BOQTable and ReportsPage implementation remains structurally intact
+>>>>>>> e15734d (chore(core): stabilize SMM estimation pipeline and resolve type contracts)
