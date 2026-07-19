@@ -8,6 +8,7 @@ export type MaintenancePriority = 'Low' | 'Medium' | 'High' | 'Critical';
 export type MaintenanceCategory = 'Preventive' | 'Corrective' | 'Predictive' | 'Emergency' | 'Inspection';
 export type LifecyclePhase = 'Construction' | 'Operational' | 'Maintenance' | 'End-of-Life';
 export type ActiveTabType = string;
+export type ProjectStatus = 'Planning' | 'Under Construction' | 'Active' | 'Completed';
 
 export const ADMIN_ROLES: UserRole[] = ['Administrator'];
 export const FM_ROLES: UserRole[] = ['Facility Manager'];
@@ -24,21 +25,30 @@ export interface User {
 
 // ─── Project Types ────────────────────────────────────────────────────────────
 
-export interface BlueprintAnalysisResult {
-  floorAreaPerFloor: number;
-  floors: number;
-  buildingType: string;
-  constructionStandard: string;
-  county: string;
-  confidence: number;
-  detectedRooms: DetectedRoom[];
-  notes: string;
-}
-
 export interface DetectedRoom {
   label: string;
   count: number;
   areaSqm: number;
+}
+
+export interface BlueprintAnalysisResult {
+  // New (SMM pipeline) contract — required
+  estimatedFloorArea: number | null;
+  floors: number | null;
+  buildingType: string | null;
+  confidence: number | null; // 0.00–1.00
+  observations: string[];
+  roomCount?: number | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  roofType?: string | null;
+  drawingScale?: string | null;
+  // Legacy fields — optional, used by the BlueprintUpload review UI
+  floorAreaPerFloor?: number;
+  detectedRooms?: DetectedRoom[];
+  notes?: string;
+  constructionStandard?: string;
+  county?: string;
 }
 
 export interface Project {
@@ -51,6 +61,8 @@ export interface Project {
   floorAreaPerFloor: number;
   floors: number;
   blueprintAnalysis?: BlueprintAnalysisResult;
+  blueprintFileName?: string;
+  status?: ProjectStatus;
   createdAt: string;
   updatedAt: string;
 }
@@ -93,6 +105,78 @@ export interface LifecycleAnalysis {
   annualCosts: LifecycleCost[];
   totalLifecycleCost: number;
   netPresentValue: number;
+}
+
+// ─── SMM Pipeline Types (BOQ Engine) ──────────────────────────────────────────
+
+export type BOQLineItemSource = 'estimated' | 'measured';
+
+export interface BOQLineItem {
+  section: string;
+  quantity: number;
+  unit: string;
+  unitRate: number;
+  amount: number;
+  source: BOQLineItemSource;
+}
+
+export interface ProfessionalFee {
+  name: string;
+  rate: number;
+  amount: number;
+}
+
+export interface YearlyProjection {
+  year: number;
+  opex: number;
+  cumulative: number;
+}
+
+export interface BOQEstimate {
+  id: string;
+  projectId: string;
+  projectName: string;
+  county: string;
+  buildingType: string;
+  constructionStandard: string;
+  gfa: number;
+  floors: number;
+  costPerSqm: number;
+  constructionCost: number;
+  externalWorks: number;
+  preliminaries: number;
+  professionalFees: ProfessionalFee[];
+  statutoryCosts: number;
+  subtotal: number;
+  contingency: number;
+  vatAmount: number;
+  totalProjectCost: number;
+  lifecycleYears: number;
+  annualOpex: number;
+  totalLifecycleCost: number;
+  tco: number;
+  lineItems: BOQLineItem[];
+  yearlyProjection: YearlyProjection[];
+  blueprintObservations: string[];
+  aiConfidence: number | null;
+  createdAt: string;
+}
+
+// ─── Regional Pricing (Supabase row contract) ────────────────────────────────
+
+export interface RegionalPricingRow {
+  id: string;
+  county: string;
+  base_cost_per_sqm_economy: number;
+  base_cost_per_sqm_standard: number;
+  base_cost_per_sqm_premium: number;
+  base_cost_per_sqm_luxury: number;
+  material_multiplier: number;
+  labour_multiplier: number;
+  service_multiplier: number;
+  inflation_factor: number;
+  transport_factor: number;
+  notes: string | null;
 }
 
 // ─── Maintenance Types ────────────────────────────────────────────────────────

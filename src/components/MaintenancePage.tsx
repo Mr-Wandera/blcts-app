@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { User, MaintenanceTask, MaintenanceCategory, MaintenancePriority, MaintenanceStatus } from '../types';
 import { Plus, Search, Wrench, Calendar, DollarSign, User as UserIcon, Trash2, X, CircleCheck as CheckCircle2, Loader as Loader2, ClipboardList, ArrowRight } from 'lucide-react';
 import { useToast } from './ui/Toast';
+import { supabase } from '../lib/supabase';
 
 interface Props {
   projectId: string;
@@ -44,6 +45,43 @@ function formatKsh(n: number): string {
   return 'KSh ' + Math.round(n).toLocaleString('en-KE');
 }
 
+function serializeTask(t: MaintenanceTask) {
+  return {
+    id: t.id,
+    property_id: t.projectId,
+    title: t.title,
+    description: t.description,
+    component: t.category,
+    category: t.category,
+    priority: t.priority,
+    status: t.status,
+    assigned_to: t.assignedTo,
+    estimated_cost: t.estimatedCost,
+    actual_cost: t.actualCost ?? 0,
+    target_date: t.dueDate,
+    completed_date: t.completedAt ?? null,
+    created_at: t.createdAt,
+  };
+}
+
+function deserializeTask(row: Record<string, unknown>): MaintenanceTask {
+  return {
+    id: String(row.id),
+    projectId: String(row.property_id),
+    title: String(row.title),
+    description: String(row.description ?? ''),
+    category: (row.category as MaintenanceCategory) ?? 'Preventive',
+    priority: (row.priority as MaintenancePriority) ?? 'Medium',
+    status: (row.status as MaintenanceStatus) ?? 'Pending',
+    assignedTo: String(row.assigned_to ?? 'Unassigned'),
+    dueDate: String(row.target_date ?? ''),
+    estimatedCost: Number(row.estimated_cost ?? 0),
+    actualCost: row.actual_cost != null ? Number(row.actual_cost) : undefined,
+    createdAt: String(row.created_at ?? new Date().toISOString()),
+    completedAt: row.completed_date != null ? String(row.completed_date) : undefined,
+  };
+}
+
 export default function MaintenancePage({ projectId, projectName, currentUser }: Props) {
   const [tasks, setTasks] = useState<MaintenanceTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,24 +99,28 @@ export default function MaintenancePage({ projectId, projectName, currentUser }:
   });
   const { show } = useToast();
 
-  useEffect(() => {
-    const key = `blcts_maintenance_${projectId}`;
+  const loadTasks = useCallback(async () => {
+    setLoading(true);
     try {
-      const stored = JSON.parse(localStorage.getItem(key) || '[]');
-      setTasks(stored);
+      const { data, error } = await supabase
+        .from('maintenance_tasks')
+        .select('*')
+        .eq('property_id', projectId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setTasks((data ?? []).map(deserializeTask));
     } catch {
       setTasks([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
   }, [projectId]);
 
-  function saveTasks(updated: MaintenanceTask[]) {
-    setTasks(updated);
-    localStorage.setItem(`blcts_maintenance_${projectId}`, JSON.stringify(updated));
-  }
+  useEffect(() => {
+    void loadTasks();
+  }, [loadTasks]);
 
-  function handleCreate(e: React.FormEvent) {
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title.trim()) { show('Task title is required', 'error'); return; }
     const task: MaintenanceTask = {
@@ -94,21 +136,42 @@ export default function MaintenancePage({ projectId, projectName, currentUser }:
       estimatedCost: form.estimatedCost,
       createdAt: new Date().toISOString(),
     };
-    saveTasks([task, ...tasks]);
-    setForm({ title: '', description: '', category: 'Preventive', priority: 'Medium', assignedTo: '', dueDate: '', estimatedCost: 0 });
-    setShowCreate(false);
-    show('Maintenance task created', 'success');
+    try {
+      const { error } = await supabase.from('maintenance_tasks').insert(serializeTask(task));
+      if (error) throw error;
+      setTasks(prev => [task, ...prev]);
+      setForm({ title: '', description: '', category: 'Preventive', priority: 'Medium', assignedTo: '', dueDate: '', estimatedCost: 0 });
+      setShowCreate(false);
+      show('Maintenance task created', 'success');
+    } catch {
+      show('Failed to save task to database', 'error');
+    }
   }
 
-  function handleStatusChange(id: string, status: MaintenanceStatus) {
-    const updated = tasks.map(t => t.id === id ? { ...t, status, completedAt: status === 'Completed' || status === 'Verified' ? new Date().toISOString() : t.completedAt } : t);
-    saveTasks(updated);
-    show(`Task status updated to ${status}`, 'success');
+  async function handleStatusChange(id: string, status: MaintenanceStatus) {
+    const completedAt = status === 'Completed' || status === 'Verified' ? new Date().toISOString() : null;
+    try {
+      const { error } = await supabase
+        .from('maintenance_tasks')
+        .update({ status, completed_date: completedAt })
+        .eq('id', id);
+      if (error) throw error;
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, status, completedAt: completedAt ?? undefined } : t));
+      show(`Task status updated to ${status}`, 'success');
+    } catch {
+      show('Failed to update task status', 'error');
+    }
   }
 
-  function handleDelete(id: string) {
-    saveTasks(tasks.filter(t => t.id !== id));
-    show('Task deleted', 'success');
+  async function handleDelete(id: string) {
+    try {
+      const { error } = await supabase.from('maintenance_tasks').delete().eq('id', id);
+      if (error) throw error;
+      setTasks(prev => prev.filter(t => t.id !== id));
+      show('Task deleted', 'success');
+    } catch {
+      show('Failed to delete task', 'error');
+    }
   }
 
   const filtered = tasks.filter(t => {

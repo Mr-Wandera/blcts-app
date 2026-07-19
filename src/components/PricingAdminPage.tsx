@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, DollarSign, MapPin, Search, Plus, CreditCard as Edit3, Save, X, TrendingUp } from 'lucide-react';
+import { ArrowLeft, DollarSign, MapPin, Search, Plus, CreditCard as Edit3, Save, X, TrendingUp, CircleAlert as AlertCircle } from 'lucide-react';
 import { useToast } from './ui/Toast';
-import { fetchMaterials, fetchRegions, updateMaterialPrice, updateRegionMultiplier, FALLBACK_MATERIALS, FALLBACK_REGIONS } from '../lib/pricing';
+import { fetchMaterials, fetchRegions, updateMaterialPrice, updateRegionMultiplier } from '../lib/pricing';
 import type { MaterialPrice, RegionalPrice } from '../types';
 
 interface Props {
@@ -28,51 +28,49 @@ function formatKsh(n: number): string {
 
 export default function PricingAdminPage({ onBack, initialTab = 'materials' }: Props) {
   const [tab, setTab] = useState<'materials' | 'regional'>(initialTab);
-  const [materials, setMaterials] = useState<MaterialPrice[]>(() => {
-    try { return JSON.parse(localStorage.getItem('blcts_materials') || 'null') || FALLBACK_MATERIALS; } catch { return FALLBACK_MATERIALS; }
-  });
-  const [regions, setRegions] = useState<RegionalPrice[]>(() => {
-    try { return JSON.parse(localStorage.getItem('blcts_regions') || 'null') || FALLBACK_REGIONS; } catch { return FALLBACK_REGIONS; }
-  });
+  const [materials, setMaterials] = useState<MaterialPrice[]>([]);
+  const [regions, setRegions] = useState<RegionalPrice[]>([]);
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState(0);
   const [editMultiplier, setEditMultiplier] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const { show } = useToast();
 
   useEffect(() => {
     let active = true;
     (async () => {
-      const [m, r] = await Promise.all([fetchMaterials(), fetchRegions()]);
-      if (!active) return;
-      setMaterials(m);
-      setRegions(r);
-      localStorage.setItem('blcts_materials', JSON.stringify(m));
-      localStorage.setItem('blcts_regions', JSON.stringify(r));
-      setLoading(false);
+      setLoadError('');
+      try {
+        const [m, r] = await Promise.all([fetchMaterials(), fetchRegions()]);
+        if (!active) return;
+        setMaterials(m);
+        setRegions(r);
+      } catch (err) {
+        if (!active) return;
+        setLoadError(err instanceof Error ? err.message : 'Failed to load pricing data.');
+      } finally {
+        if (active) setLoading(false);
+      }
     })();
     return () => { active = false; };
   }, []);
-
-  function saveMaterials() {
-    localStorage.setItem('blcts_materials', JSON.stringify(materials));
-  }
-  function saveRegions() {
-    localStorage.setItem('blcts_regions', JSON.stringify(regions));
-  }
 
   function handleEditMaterial(id: string, currentPrice: number) {
     setEditingId(id);
     setEditValue(currentPrice);
   }
 
-  function handleSaveMaterial(id: string) {
+  async function handleSaveMaterial(id: string) {
     setMaterials(prev => prev.map(m => m.id === id ? { ...m, basePrice: editValue } : m));
     setEditingId(null);
-    saveMaterials();
-    updateMaterialPrice(id, editValue);
-    show('Material price updated', 'success');
+    try {
+      await updateMaterialPrice(id, editValue);
+      show('Material price updated', 'success');
+    } catch (err) {
+      show(err instanceof Error ? err.message : 'Failed to update price', 'error');
+    }
   }
 
   function handleEditRegion(id: string, currentMultiplier: number) {
@@ -80,12 +78,15 @@ export default function PricingAdminPage({ onBack, initialTab = 'materials' }: P
     setEditMultiplier(currentMultiplier);
   }
 
-  function handleSaveRegion(id: string) {
+  async function handleSaveRegion(id: string) {
     setRegions(prev => prev.map(r => r.id === id ? { ...r, multiplier: editMultiplier } : r));
     setEditingId(null);
-    saveRegions();
-    updateRegionMultiplier(id, editMultiplier);
-    show('Regional multiplier updated', 'success');
+    try {
+      await updateRegionMultiplier(id, editMultiplier);
+      show('Regional multiplier updated', 'success');
+    } catch (err) {
+      show(err instanceof Error ? err.message : 'Failed to update multiplier', 'error');
+    }
   }
 
   const filteredMaterials = materials.filter(m =>
@@ -107,6 +108,12 @@ export default function PricingAdminPage({ onBack, initialTab = 'materials' }: P
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Pricing Administration</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage material base prices and regional cost multipliers.</p>
       </div>
+
+      {loadError && (
+        <div className="flex items-center gap-2 text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl px-4 py-3">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" /> {loadError}
+        </div>
+      )}
 
       {/* Tab toggle */}
       <div className="inline-flex rounded-xl border border-slate-200 dark:border-white/8 p-1 bg-white dark:bg-[#0f1629]">
