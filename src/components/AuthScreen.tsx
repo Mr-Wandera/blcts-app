@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Building2, Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
 import type { UserRole } from '../types';
-import { signIn, signUp } from '../lib/supabase';
+import { signIn, signUp, supabase } from '../lib/supabase';
 
 const inputBase = 'w-full px-3.5 py-2.5 rounded-xl border bg-white dark:bg-[#0f1629] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition';
 const labelBase = 'block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5';
@@ -49,8 +49,20 @@ export function AuthScreen({ onAuthed }: Props) {
     }
     setLoading(true);
     try {
-      await signUp(email.trim().toLowerCase(), password, name.trim(), role, organization.trim() || 'Independent');
-      onAuthed();
+      const cleanEmail = email.trim().toLowerCase();
+      await signUp(cleanEmail, password, name.trim(), role, organization.trim() || 'Independent');
+      // Account is auto-confirmed server-side; sign in immediately so the
+      // user lands in the app without touching an email link.
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+      if (signInError) {
+        setError('Account created. Please sign in to continue.');
+        setMode('login');
+      } else {
+        onAuthed();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign up failed.');
     } finally {
