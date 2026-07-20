@@ -103,3 +103,39 @@ select option {
   background: #ffffff;
   color: #0f172a;
 }
+
+/* Print styles — produce clean PDF reports via browser "Save as PDF" */
+@media print {
+  /* Hide app chrome: sidebar, top bar, buttons, modals */
+  aside,
+  header,
+  .no-print,
+  button {
+    display: none !important;
+  }
+
+  /* Show only the main content, full width */
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Force light theme for readability on paper */
+  body, .dark {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  /* Ensure cards print with visible borders */
+  .rounded-2xl,
+  .rounded-xl {
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  /* Expand content that was offset by the fixed sidebar */
+  .lg\:ml-0 {
+    margin-left: 0 !important;
+  }
+}

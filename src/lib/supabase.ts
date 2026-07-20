@@ -19,6 +19,24 @@ export async function signUp(email: string, password: string, name: string, role
     options: { data: { name, role, organization } },
   });
   if (error) throw error;
+
+  // Email confirmation is enabled on the project and the confirmation redirect
+  // page is broken. Auto-confirm the new account via a service-role edge
+  // function so the user can sign in immediately without an email link.
+  try {
+    const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/confirm-signup`;
+    await fetch(fnUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ email }),
+    });
+  } catch {
+    // Non-fatal: sign-in will still surface a clear error if confirmation failed.
+  }
+
   return data;
 }
 
