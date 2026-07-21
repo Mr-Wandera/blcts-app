@@ -266,8 +266,8 @@ export default function LandingPageNew({ isDark, onToggleDark, onLogin, onGetSta
               </div>
               <h2 className="text-2xl font-black tracking-tight mb-2">About BLCTS</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Building Lifecycle Cost Tracking System — an academic engineering project developed
-                at Mount Kenya University.
+                Building Lifecycle Cost Tracking System — a professional engineering platform for
+                AI-assisted construction cost estimation and lifecycle planning.
               </p>
             </div>
             <div className="space-y-6 lg:col-span-2">
@@ -324,18 +324,13 @@ export default function LandingPageNew({ isDark, onToggleDark, onLogin, onGetSta
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-xs text-slate-400">
               <span className="flex items-center gap-1.5">
-                <GraduationCap className="w-3.5 h-3.5" />
-                Mount Kenya University Project
-              </span>
-              <span className="hidden sm:inline text-slate-300 dark:text-slate-600">|</span>
-              <span className="flex items-center gap-1.5">
                 <Database className="w-3.5 h-3.5" />
                 Supabase + Gemini AI
               </span>
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
-            <p>Building Lifecycle Cost Tracking System — Final Year Project</p>
+            <p>Building Lifecycle Cost Tracking System</p>
             <a
               href="https://github.com"
               target="_blank"
