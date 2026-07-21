@@ -33,7 +33,7 @@ const TAB_TITLES: Record<Tab, string> = {
 };
 
 function App() {
-  const [showLanding, setShowLanding] = useState(() => !localStorage.getItem('blcts_seen_landing'));
+  const [showLanding, setShowLanding] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [isDark, setIsDark] = useState(() => localStorage.getItem('blcts_dark') === 'true');
@@ -98,7 +98,6 @@ function App() {
   function handleAuthed() {
     // onAuthStateChange will set the user; this just dismisses the landing/auth screen.
     setShowLanding(false);
-    localStorage.setItem('blcts_seen_landing', '1');
   }
 
   async function handleLogout() {
@@ -111,6 +110,7 @@ function App() {
     setProjects([]);
     setSelectedProjectId(null);
     setActiveTab('dashboard');
+    setShowLanding(true);
   }
 
   function handleTabChange(tab: string) {
@@ -217,8 +217,8 @@ function App() {
         <LandingPageNew
           isDark={isDark}
           onToggleDark={() => setIsDark(d => !d)}
-          onLogin={() => { setShowLanding(false); localStorage.setItem('blcts_seen_landing', '1'); }}
-          onGetStarted={() => { setShowLanding(false); localStorage.setItem('blcts_seen_landing', '1'); }}
+          onLogin={() => setShowLanding(false)}
+          onGetStarted={() => setShowLanding(false)}
         />
       </Suspense>
     );

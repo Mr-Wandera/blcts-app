@@ -24,22 +24,23 @@ export default function LandingPageNew({ isDark, onToggleDark, onLogin, onGetSta
   ];
 
   const workflow = [
-    { icon: Upload,      title: 'Upload Blueprint',  desc: 'Select an architectural drawing in JPEG, PNG, WebP, or PDF format.' },
-    { icon: ScanLine,    title: 'AI Analysis',        desc: 'Gemini 2.5 Flash analyses the drawing and extracts building parameters.' },
-    { icon: Layers,      title: 'Calculate GFA',      desc: 'Gross Floor Area is computed from extracted area and storey count.' },
-    { icon: FileText,    title: 'Generate BOQ',        desc: 'A 21-line Bill of Quantities is produced with SMM-based quantities.' },
-    { icon: MapPin,      title: 'Regional Pricing',   desc: 'County-specific rates are applied to determine cost per square metre.' },
-    { icon: TrendingUp,  title: 'Lifecycle Cost',      desc: '30-year operational expenditure is projected with inflation adjustment.' },
-    { icon: FileBarChart, title: 'Generate Report',   desc: 'Export or print a professional cost statement for the project.' },
+    { icon: Upload,       title: 'Upload Blueprint',       desc: 'Select an architectural drawing in JPEG, PNG, WebP, or PDF format.' },
+    { icon: ScanLine,     title: 'AI Analysis',            desc: 'Gemini 2.5 Flash analyses the drawing and identifies building parameters.' },
+    { icon: Calculator,   title: 'Extract Measurements',  desc: 'Floor area, storey count, room counts, and building type are extracted from the drawing.' },
+    { icon: Layers,       title: 'Calculate GFA',         desc: 'Gross Floor Area is computed from extracted area and storey count.' },
+    { icon: FileText,     title: 'Generate BOQ',          desc: 'A 21-line Bill of Quantities is produced with SMM-based quantities.' },
+    { icon: MapPin,       title: 'Apply Regional Pricing', desc: 'County-specific rates are applied to determine cost per square metre.' },
+    { icon: TrendingUp,   title: 'Lifecycle Cost Analysis', desc: '30-year operational expenditure is projected with inflation adjustment.' },
+    { icon: FileBarChart, title: 'Generate Report',       desc: 'Export or print a professional cost statement for the project.' },
   ];
 
   const benefits = [
-    { icon: Clock,         title: 'Faster Estimation',            desc: 'Reduce manual quantity surveying from hours to minutes through AI-assisted blueprint analysis.' },
-    { icon: BadgeCheck,  title: 'Improved Accuracy',            desc: 'Eliminate transcription errors with a deterministic calculation pipeline from extraction to BOQ.' },
-    { icon: Target,        title: 'Data-Driven Decisions',         desc: 'Compare construction and lifecycle costs across building types, standards, and counties.' },
-    { icon: TrendingUp,    title: 'Lifecycle Cost Awareness',      desc: 'Understand total cost of ownership, not just construction cost, over a 30-year horizon.' },
-    { icon: MapPin,        title: 'County-Based Pricing',          desc: 'Reflect real regional material, labour, and transport cost variations across Kenya.' },
-    { icon: FileBarChart,  title: 'Professional Reporting',       desc: 'Produce submission-ready cost statements with full BOQ and lifecycle breakdowns.' },
+    { icon: Clock,        title: 'Faster Estimation',      desc: 'Reduce manual quantity surveying from hours to minutes through AI-assisted blueprint analysis.' },
+    { icon: BadgeCheck,   title: 'Accurate Costing',       desc: 'Eliminate transcription errors with a deterministic calculation pipeline from extraction to BOQ.' },
+    { icon: MapPin,       title: 'County-Based Pricing',   desc: 'Reflect real regional material, labour, and transport cost variations across 10 Kenyan counties.' },
+    { icon: Target,       title: 'Better Decision Making', desc: 'Compare construction and lifecycle costs across building types, standards, and counties.' },
+    { icon: FileBarChart, title: 'Professional Reporting', desc: 'Produce submission-ready cost statements with full BOQ and lifecycle breakdowns.' },
+    { icon: TrendingUp,   title: 'Lifecycle Planning',     desc: 'Understand total cost of ownership, not just construction cost, over a 30-year horizon.' },
   ];
 
   const stats = [
@@ -201,7 +202,7 @@ export default function LandingPageNew({ isDark, onToggleDark, onLogin, onGetSta
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-14">
           <h2 className="text-3xl font-black tracking-tight mb-3">Analysis Workflow</h2>
-          <p className="text-slate-500 dark:text-slate-400">From blueprint upload to lifecycle report in seven steps.</p>
+          <p className="text-slate-500 dark:text-slate-400">From blueprint upload to lifecycle report in eight steps.</p>
         </div>
         <div className="space-y-3">
           {workflow.map((s, i) => (
@@ -265,8 +266,8 @@ export default function LandingPageNew({ isDark, onToggleDark, onLogin, onGetSta
               </div>
               <h2 className="text-2xl font-black tracking-tight mb-2">About BLCTS</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Building Lifecycle Cost Tracking System — an academic engineering project developed
-                at Mount Kenya University.
+                Building Lifecycle Cost Tracking System — a professional engineering platform for
+                AI-assisted construction cost estimation and lifecycle planning.
               </p>
             </div>
             <div className="space-y-6 lg:col-span-2">
@@ -323,18 +324,13 @@ export default function LandingPageNew({ isDark, onToggleDark, onLogin, onGetSta
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-xs text-slate-400">
               <span className="flex items-center gap-1.5">
-                <GraduationCap className="w-3.5 h-3.5" />
-                Mount Kenya University Project
-              </span>
-              <span className="hidden sm:inline text-slate-300 dark:text-slate-600">|</span>
-              <span className="flex items-center gap-1.5">
                 <Database className="w-3.5 h-3.5" />
                 Supabase + Gemini AI
               </span>
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
-            <p>Building Lifecycle Cost Tracking System — Final Year Project</p>
+            <p>Building Lifecycle Cost Tracking System</p>
             <a
               href="https://github.com"
               target="_blank"
