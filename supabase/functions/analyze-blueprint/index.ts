@@ -79,27 +79,42 @@ Deno.serve(async (req: Request) => {
 
     const cleanBase64 = base64Data.includes(",") ? base64Data.split(",")[1] : base64Data;
 
-    const geminiResp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ inline_data: { mime_type: mimeType, data: cleanBase64 } }, { text: PROMPT }] }],
-          generationConfig: {
-            response_mime_type: "application/json",
-            responseSchema: RESPONSE_SCHEMA,
-            temperature: 0.1,
-          },
-          safetySettings: [
-            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_LOW_AND_ABOVE" },
-            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_LOW_AND_ABOVE" },
-            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_LOW_AND_ABOVE" },
-            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_LOW_AND_ABOVE" },
-          ],
-        }),
+    // Abort Gemini after 80s so the edge function doesn't hang indefinitely.
+    const geminiController = new AbortController();
+    const geminiTimeoutId = setTimeout(() => geminiController.abort(), 80_000);
+
+    let geminiResp: Response;
+    try {
+      geminiResp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ inline_data: { mime_type: mimeType, data: cleanBase64 } }, { text: PROMPT }] }],
+            generationConfig: {
+              response_mime_type: "application/json",
+              responseSchema: RESPONSE_SCHEMA,
+              temperature: 0.1,
+            },
+            safetySettings: [
+              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_LOW_AND_ABOVE" },
+              { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_LOW_AND_ABOVE" },
+              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_LOW_AND_ABOVE" },
+              { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_LOW_AND_ABOVE" },
+            ],
+          }),
+          signal: geminiController.signal,
+        }
+      );
+    } catch (fetchErr) {
+      clearTimeout(geminiTimeoutId);
+      if (fetchErr instanceof DOMException && fetchErr.name === "AbortError") {
+        return new Response(JSON.stringify({ error: "Gemini API request timed out. Please try again." }), { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-    );
+      return new Response(JSON.stringify({ error: "Network error contacting Gemini API." }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    clearTimeout(geminiTimeoutId);
 
     if (!geminiResp.ok) {
       const errText = await geminiResp.text();

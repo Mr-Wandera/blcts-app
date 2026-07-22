@@ -104,8 +104,8 @@ function App() {
     void loadProjects();
   }, [loadProjects]);
 
-  function handleAuthed() {
-    // onAuthStateChange will set the user; this just dismisses the landing/auth screen.
+  function handleAuthed(authedUser: User) {
+    setUser(authedUser);
     setShowLanding(false);
   }
 

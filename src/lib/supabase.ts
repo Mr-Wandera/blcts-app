@@ -26,7 +26,10 @@ export async function signUp(email: string, password: string, name: string, role
 }
 
 export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.trim().toLowerCase(),
+    password,
+  });
   if (error) throw error;
   return data;
 }
@@ -61,8 +64,6 @@ export function mapSupabaseUser(u: User): { id: string; name: string; email: str
     organization: meta.organization as string | undefined,
   };
 }
-
-// ─── Regional Pricing ────────────────────────────────────────────────────────
 
 export async function fetchRegionalPricing(): Promise<RegionalPricingRow[]> {
   const { data, error } = await supabase
