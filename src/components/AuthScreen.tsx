@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Building2, Eye, EyeOff, LogIn, UserPlus, Mail, ArrowLeft, KeyRound, Send } from 'lucide-react';
 import type { UserRole } from '../types';
-import { signIn, signUp, supabase, resetPasswordForEmail, resendVerificationEmail } from '../lib/supabase';
+import { signIn, signUp, resetPasswordForEmail, resendVerificationEmail } from '../lib/supabase';
 import { mapAuthError } from '../lib/authErrors';
 
 const inputBase = 'w-full px-3.5 py-2.5 rounded-xl border bg-white dark:bg-[#0f1629] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition';
@@ -60,18 +60,16 @@ export function AuthScreen({ onAuthed }: Props) {
     setLoading(true);
     try {
       const cleanEmail = email.trim().toLowerCase();
-      await signUp(cleanEmail, password, name.trim(), role, organization.trim() || 'Independent');
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password,
-      });
-      if (signInError) {
-        const info = mapAuthError(signInError);
-        setError(info.message);
-        setNeedsVerification(info.needsVerification ?? false);
-        setScreen('login');
-      } else {
+      const data = await signUp(cleanEmail, password, name.trim(), role, organization.trim() || 'Independent');
+      // If mailer_autoconfirm is true, signUp returns a session immediately.
+      // If not, the user needs to verify their email before signing in.
+      if (data.session && data.user) {
         onAuthed();
+      } else {
+        // Email confirmation required — switch to login and show verification message.
+        setScreen('login');
+        setNeedsVerification(true);
+        setInfo('Account created! Please check your email to verify your account before signing in.');
       }
     } catch (err) {
       const info = mapAuthError(err);
