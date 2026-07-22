@@ -2,7 +2,7 @@ import {
   Building2, ArrowRight, Moon, Sun,
   Layers, DollarSign, TrendingUp, Wrench, FileText, Shield, MapPin,
   Upload, ScanLine, Calculator, BarChart3, FileBarChart, Target,
-  Clock, BadgeCheck, Database, GraduationCap, Github,
+  Clock, BadgeCheck, Database, GraduationCap,
 } from 'lucide-react';
 
 interface Props {
@@ -329,17 +329,8 @@ export default function LandingPageNew({ isDark, onToggleDark, onLogin, onGetSta
               </span>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-center gap-2 text-xs text-slate-400">
             <p>Building Lifecycle Cost Tracking System</p>
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition"
-            >
-              <Github className="w-3.5 h-3.5" />
-              GitHub Repository
-            </a>
           </div>
         </div>
       </footer>
