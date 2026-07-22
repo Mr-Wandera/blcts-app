@@ -4,6 +4,7 @@ import { AuthScreen } from './components/AuthScreen';
 import { Layout } from './components/Layout';
 import { Loading } from './components/ui/Loading';
 import { supabase, mapSupabaseUser, fetchProjects, createProject, updateProject, deleteProject, signOut } from './lib/supabase';
+const ResetPasswordPage = lazy(() => import('./components/ResetPasswordPage'));
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const ProjectsPage = lazy(() => import('./components/ProjectsPage'));
@@ -36,6 +37,7 @@ function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [isDark, setIsDark] = useState(() => localStorage.getItem('blcts_dark') === 'true');
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [projects, setProjects] = useState<Project[]>([]);
@@ -59,15 +61,22 @@ function App() {
       setAuthReady(true);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       (async () => {
+        if (event === 'PASSWORD_RECOVERY') {
+          // User clicked the reset link in the email — show the reset password page.
+          setPasswordRecovery(true);
+          return;
+        }
         if (session?.user) {
           const mapped = mapSupabaseUser(session.user) as User;
           setUser(mapped);
+          setPasswordRecovery(false);
         } else {
           setUser(null);
           setProjects([]);
           setSelectedProjectId(null);
+          setPasswordRecovery(false);
         }
       })();
     });
@@ -209,6 +218,17 @@ function App() {
 
   if (!authReady) {
     return <Loading message="Loading…" />;
+  }
+
+  if (passwordRecovery) {
+    return (
+      <Suspense fallback={<Loading message="Loading…" />}>
+        <ResetPasswordPage onBackToLogin={() => {
+          setPasswordRecovery(false);
+          setShowLanding(true);
+        }} />
+      </Suspense>
+    );
   }
 
   if (showLanding && !user) {

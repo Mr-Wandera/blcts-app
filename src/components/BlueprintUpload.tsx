@@ -40,6 +40,7 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
   });
   const fileRef = useRef<HTMLInputElement>(null);
   const fileDataRef = useRef<{ base64: string; mimeType: string; name: string } | null>(null);
+  const analyzingRef = useRef(false);
   const { show } = useToast();
 
   function handleFile(file: File) {
@@ -63,6 +64,8 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
   }
 
   async function runAnalysis() {
+    if (analyzingRef.current) return;
+    analyzingRef.current = true;
     setStep('analyzing');
     setAnalysisError('');
     const fileData = fileDataRef.current;
@@ -70,6 +73,7 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
     if (!fileData) {
       setAnalysisError('No file selected. Please upload a blueprint first.');
       setStep('error');
+      analyzingRef.current = false;
       return;
     }
 
@@ -99,6 +103,8 @@ export default function BlueprintUpload({ project, onConfirm, onBack }: Props) {
       setAnalysisError(err instanceof Error ? err.message : 'AI analysis failed. Please try again.');
       setStep('error');
       show('AI analysis failed', 'error');
+    } finally {
+      analyzingRef.current = false;
     }
   }
 

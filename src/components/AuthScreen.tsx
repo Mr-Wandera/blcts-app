@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Building2, Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
+import { Building2, Eye, EyeOff, LogIn, UserPlus, Mail, ArrowLeft, KeyRound, Send } from 'lucide-react';
 import type { UserRole } from '../types';
-import { signIn, signUp, supabase } from '../lib/supabase';
+import { signIn, signUp, supabase, resetPasswordForEmail, resendVerificationEmail } from '../lib/supabase';
+import { mapAuthError } from '../lib/authErrors';
 
 const inputBase = 'w-full px-3.5 py-2.5 rounded-xl border bg-white dark:bg-[#0f1629] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition';
 const labelBase = 'block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5';
@@ -10,13 +11,17 @@ interface Props {
   onAuthed: () => void;
 }
 
+type Screen = 'login' | 'signup' | 'forgot' | 'reset';
+
 export function AuthScreen({ onAuthed }: Props) {
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [screen, setScreen] = useState<Screen>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   const [name, setName] = useState('');
   const [role, setRole] = useState<UserRole>('Building Owner');
@@ -25,12 +30,16 @@ export function AuthScreen({ onAuthed }: Props) {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setInfo('');
+    setNeedsVerification(false);
     setLoading(true);
     try {
       await signIn(email.trim(), password);
       onAuthed();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign in failed. Check your credentials.');
+      const info = mapAuthError(err);
+      setError(info.message);
+      setNeedsVerification(info.needsVerification ?? false);
     } finally {
       setLoading(false);
     }
@@ -39,6 +48,7 @@ export function AuthScreen({ onAuthed }: Props) {
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setInfo('');
     if (!name.trim() || !email.trim() || !password) {
       setError('All fields are required.');
       return;
@@ -51,24 +61,155 @@ export function AuthScreen({ onAuthed }: Props) {
     try {
       const cleanEmail = email.trim().toLowerCase();
       await signUp(cleanEmail, password, name.trim(), role, organization.trim() || 'Independent');
-      // Account is auto-confirmed server-side; sign in immediately so the
-      // user lands in the app without touching an email link.
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password,
       });
       if (signInError) {
-        setError('Account created. Please sign in to continue.');
-        setMode('login');
+        const info = mapAuthError(signInError);
+        setError(info.message);
+        setNeedsVerification(info.needsVerification ?? false);
+        setScreen('login');
       } else {
         onAuthed();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign up failed.');
+      const info = mapAuthError(err);
+      setError(info.message);
+      setNeedsVerification(info.needsVerification ?? false);
     } finally {
       setLoading(false);
     }
   }
+
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setInfo('');
+    if (!email.trim()) {
+      setError('Please enter your email address.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await resetPasswordForEmail(email.trim());
+      setInfo('Password reset instructions have been sent to your email.');
+    } catch (err) {
+      const info = mapAuthError(err);
+      setError(info.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResendVerification() {
+    setError('');
+    setInfo('');
+    if (!email.trim()) {
+      setError('Please enter your email address first.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await resendVerificationEmail(email.trim());
+      setInfo('Verification email has been resent. Please check your inbox.');
+      setNeedsVerification(false);
+    } catch (err) {
+      const info = mapAuthError(err);
+      setError(info.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ─── Forgot Password screen ──────────────────────────────────────────────
+  if (screen === 'forgot') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0a0f1e] p-4 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(16,185,129,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.04)_1px,transparent_1px)] bg-[size:48px_48px]" />
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-emerald-500/6 rounded-full blur-[120px]" />
+        </div>
+
+        <div className="relative w-full max-w-md animate-fade-in">
+          <div className="flex flex-col items-center mb-8">
+            <div className="relative mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-xl shadow-emerald-600/30">
+                <Building2 className="w-7 h-7 text-white" strokeWidth={2} />
+              </div>
+            </div>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">BLCTS</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-500 tracking-widest uppercase mt-1">Building Lifecycle Cost Intelligence</p>
+          </div>
+
+          <div className="bg-white dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl p-8">
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-1">
+                <KeyRound className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Forgot Password</h2>
+              </div>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Enter your email and we'll send you a link to reset your password.
+              </p>
+            </div>
+
+            <form onSubmit={handleForgotPassword} noValidate className="space-y-4">
+              <div>
+                <label className={labelBase}>Email address</label>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={e => { setEmail(e.target.value); setError(''); setInfo(''); }}
+                  placeholder="you@example.com"
+                  className={inputBase}
+                />
+              </div>
+
+              {error && (
+                <div className="flex items-start gap-2 text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl px-3.5 py-2.5">
+                  <span className="mt-0.5 flex-shrink-0">⚠</span>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {info && (
+                <div className="flex items-start gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-xl px-3.5 py-2.5">
+                  <span className="mt-0.5 flex-shrink-0">✓</span>
+                  <span>{info}</span>
+                </div>
+              )}
+
+              <button type="submit"
+                disabled={loading || !email}
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/40 disabled:cursor-not-allowed text-white font-bold text-sm transition-all shadow-lg shadow-emerald-600/25 hover:-translate-y-px"
+              >
+                {loading
+                  ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  : <Send className="w-4 h-4" />}
+                {loading ? 'Sending...' : 'Send Reset Link'}
+              </button>
+            </form>
+
+            <div className="mt-5 text-center">
+              <button
+                type="button"
+                onClick={() => { setScreen('login'); setError(''); setInfo(''); }}
+                className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition font-medium"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to sign in
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Login / Signup screens ───────────────────────────────────────────────
+  const isLogin = screen === 'login';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0a0f1e] p-4 relative overflow-hidden">
@@ -92,21 +233,21 @@ export function AuthScreen({ onAuthed }: Props) {
         <div className="bg-white dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl p-8">
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-1">
-              {mode === 'login'
+              {isLogin
                 ? <LogIn className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 : <UserPlus className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
+                {isLogin ? 'Sign in to your account' : 'Create a new account'}
               </h2>
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {mode === 'login'
+              {isLogin
                 ? 'Enter your credentials to access your projects.'
                 : 'Join BLCTS as a Building Owner or Facility Manager'}
             </p>
           </div>
 
-          {mode === 'login' ? (
+          {isLogin ? (
             <form onSubmit={handleLogin} noValidate className="space-y-4">
               <div>
                 <label className={labelBase}>Email address</label>
@@ -115,7 +256,7 @@ export function AuthScreen({ onAuthed }: Props) {
                   autoComplete="email"
                   required
                   value={email}
-                  onChange={e => { setEmail(e.target.value); setError(''); }}
+                  onChange={e => { setEmail(e.target.value); setError(''); setInfo(''); setNeedsVerification(false); }}
                   placeholder="you@example.com"
                   className={inputBase}
                 />
@@ -128,7 +269,7 @@ export function AuthScreen({ onAuthed }: Props) {
                     autoComplete="current-password"
                     required
                     value={password}
-                    onChange={e => { setPassword(e.target.value); setError(''); }}
+                    onChange={e => { setPassword(e.target.value); setError(''); setInfo(''); setNeedsVerification(false); }}
                     placeholder="••••••••"
                     className={inputBase + ' pr-10'}
                   />
@@ -140,10 +281,40 @@ export function AuthScreen({ onAuthed }: Props) {
                 </div>
               </div>
 
+              {/* Forgot password link — between password field and sign in button */}
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => { setScreen('forgot'); setError(''); setInfo(''); }}
+                  className="text-xs text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition font-medium"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+
               {error && (
                 <div className="flex items-start gap-2 text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl px-3.5 py-2.5">
                   <span className="mt-0.5 flex-shrink-0">⚠</span>
                   <span>{error}</span>
+                </div>
+              )}
+
+              {needsVerification && (
+                <button
+                  type="button"
+                  onClick={() => void handleResendVerification()}
+                  disabled={loading}
+                  className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition font-medium disabled:opacity-50"
+                >
+                  <Mail className="w-4 h-4" />
+                  Resend Verification Email
+                </button>
+              )}
+
+              {info && (
+                <div className="flex items-start gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-xl px-3.5 py-2.5">
+                  <span className="mt-0.5 flex-shrink-0">✓</span>
+                  <span>{info}</span>
                 </div>
               )}
 
@@ -165,7 +336,7 @@ export function AuthScreen({ onAuthed }: Props) {
                   type="text"
                   required
                   value={name}
-                  onChange={e => { setName(e.target.value); setError(''); }}
+                  onChange={e => { setName(e.target.value); setError(''); setInfo(''); }}
                   placeholder="Your full name"
                   className={inputBase}
                 />
@@ -177,7 +348,7 @@ export function AuthScreen({ onAuthed }: Props) {
                   autoComplete="email"
                   required
                   value={email}
-                  onChange={e => { setEmail(e.target.value); setError(''); }}
+                  onChange={e => { setEmail(e.target.value); setError(''); setInfo(''); }}
                   placeholder="you@example.com"
                   className={inputBase}
                 />
@@ -190,7 +361,7 @@ export function AuthScreen({ onAuthed }: Props) {
                     autoComplete="new-password"
                     required
                     value={password}
-                    onChange={e => { setPassword(e.target.value); setError(''); }}
+                    onChange={e => { setPassword(e.target.value); setError(''); setInfo(''); }}
                     placeholder="At least 6 characters"
                     className={inputBase + ' pr-10'}
                   />
@@ -224,7 +395,7 @@ export function AuthScreen({ onAuthed }: Props) {
                   <input
                     type="text"
                     value={organization}
-                    onChange={e => { setOrganization(e.target.value); setError(''); }}
+                    onChange={e => { setOrganization(e.target.value); setError(''); setInfo(''); }}
                     placeholder="Optional"
                     className={inputBase}
                   />
@@ -235,6 +406,13 @@ export function AuthScreen({ onAuthed }: Props) {
                 <div className="flex items-start gap-2 text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl px-3.5 py-2.5">
                   <span className="mt-0.5 flex-shrink-0">⚠</span>
                   <span>{error}</span>
+                </div>
+              )}
+
+              {info && (
+                <div className="flex items-start gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-xl px-3.5 py-2.5">
+                  <span className="mt-0.5 flex-shrink-0">✓</span>
+                  <span>{info}</span>
                 </div>
               )}
 
@@ -253,10 +431,10 @@ export function AuthScreen({ onAuthed }: Props) {
           <div className="mt-5 text-center">
             <button
               type="button"
-              onClick={() => { setMode(m => m === 'login' ? 'signup' : 'login'); setError(''); }}
+              onClick={() => { setScreen(isLogin ? 'signup' : 'login'); setError(''); setInfo(''); setNeedsVerification(false); }}
               className="text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition font-medium"
             >
-              {mode === 'login'
+              {isLogin
                 ? "Don't have an account? Sign up"
                 : 'Already have an account? Sign in'}
             </button>

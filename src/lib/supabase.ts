@@ -51,6 +51,21 @@ export async function signOut() {
   if (error) throw error;
 }
 
+export async function resetPasswordForEmail(email: string): Promise<void> {
+  const redirectTo = `${window.location.origin}/reset-password`;
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) throw error;
+}
+
+export async function resendVerificationEmail(email: string): Promise<void> {
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: `${window.location.origin}/reset-password` },
+  });
+  if (error) throw error;
+}
+
 export function mapSupabaseUser(u: User): { id: string; name: string; email: string; role: string; organization?: string } {
   const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
   return {

@@ -121,8 +121,15 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "Gemini returned no candidates." }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const text = candidate?.content?.parts?.[0]?.text;
+    // Gemini may return text in parts[0].text or across multiple parts.
+    // Also handle finishReason that indicates truncation or safety blocking.
+    const parts = candidate?.content?.parts ?? [];
+    const text = parts.map((p: { text?: string }) => p?.text ?? "").join("").trim();
     if (!text) {
+      const reason = candidate?.finishReason ?? "UNKNOWN";
+      if (reason === "SAFETY" || reason === "RECITATION") {
+        return new Response(JSON.stringify({ error: `Gemini blocked the response (${reason}). Try a different blueprint.` }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       return new Response(JSON.stringify({ error: "Gemini returned an empty response." }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

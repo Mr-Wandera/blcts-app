@@ -55,15 +55,31 @@ export async function analyzeBlueprint(
   const accessToken = session.session?.access_token;
 
   const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-blueprint`;
-  const resp = await fetch(apiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken ?? import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ base64Data, mimeType, fileName: _fileName }),
-  });
+
+  // Abort after 90s so the UI never gets stuck in a permanent loading state.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90_000);
+
+  let resp: Response;
+  try {
+    resp = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken ?? import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ base64Data, mimeType, fileName: _fileName }),
+      signal: controller.signal,
+    });
+  } catch (fetchErr) {
+    clearTimeout(timeoutId);
+    if (fetchErr instanceof DOMException && fetchErr.name === 'AbortError') {
+      throw new Error('AI analysis timed out. Please try again.');
+    }
+    throw new Error('Network error — could not reach the analysis service. Please check your connection and try again.');
+  }
+  clearTimeout(timeoutId);
 
   if (!resp.ok) {
     const errBody = await resp.json().catch(() => ({ error: 'Unknown error' }));
@@ -71,7 +87,12 @@ export async function analyzeBlueprint(
   }
 
   const payload = await resp.json();
-  const parsed: Record<string, unknown> = payload.result;
+
+  // The edge function returns { result, fileName }. Guard against unexpected shapes.
+  const parsed: Record<string, unknown> =
+    (payload && typeof payload === 'object' && payload.result && typeof payload.result === 'object')
+      ? payload.result as Record<string, unknown>
+      : {};
 
   const observations = Array.isArray(parsed.observations)
     ? parsed.observations.map((o: unknown) => (typeof o === 'string' ? o.trim() : '')).filter((o: string) => o.length > 0).slice(0, 5)
@@ -86,7 +107,7 @@ export async function analyzeBlueprint(
     roomCount: parseBoundedInt(parsed.roomCount, 0),
     bedrooms: parseBoundedInt(parsed.bedrooms, 0),
     bathrooms: parseBoundedInt(parsed.bathrooms, 0),
-    roofType: typeof parsed.roofType === 'string' ? parsed.roofType.trim() : null,
-    drawingScale: typeof parsed.drawingScale === 'string' ? parsed.drawingScale.trim() : null,
+    roofType: typeof parsed.roofType === 'string' && parsed.roofType.trim() ? parsed.roofType.trim() : null,
+    drawingScale: typeof parsed.drawingScale === 'string' && parsed.drawingScale.trim() ? parsed.drawingScale.trim() : null,
   };
 }
