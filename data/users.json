@@ -1,0 +1,20 @@
+[
+  {
+    "id": "user-admin",
+    "email": "wanderaabdulwahab4@gmail.com",
+    "name": "Abdulwahab Wandera",
+    "role": "Developer",
+    "organization": "Wandera Investments Ltd",
+    "phone": "+254 712 345 678",
+    "passwordHash": "54b79259254eaed6593410bd63c089de0d797d2b4f020683060a21bbad6da5ed"
+  },
+  {
+    "id": "user-manager",
+    "email": "manager.thika@blcts.com",
+    "name": "Kamau Njoroge",
+    "role": "Facility Manager",
+    "organization": "Thika Block Management",
+    "phone": "+254 722 987 654",
+    "passwordHash": "276cbf1e0dd8b5d1bd515780206dfbf0257d379494feefee8503f2d85e9a7c2a"
+  }
+]

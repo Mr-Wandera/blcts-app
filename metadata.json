@@ -1,0 +1,6 @@
+{
+  "name": "Building Lifecycle Cost Tracking System",
+  "description": "Enterprise SaaS dashboard tracking Total Cost of Ownership (TCO) for residential and commercial real estate in Kenya, eliminating first-cost bias.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
